@@ -103,5 +103,26 @@ export class Renderer {
             this.drawHexagon(screenX, screenY, CONFIG.HEX_SIZE - 2, "#000", 0.1);
         });
     }
-
+    
+    /**
+     * 繪製分數
+     * @param {number} score 
+     * @param {number} highScore 
+     */
+    drawScore(score, highScore) {
+        this.ctx.save();
+        this.ctx.fillStyle = "#333";
+        this.ctx.font = "bold 24px Arial";
+        this.ctx.textAlign = "left";
+        
+        // 繪製目前分數
+        this.ctx.fillText(`SCORE: ${score}`, 30, 50);
+        
+        // 繪製最高分
+        this.ctx.font = "16px Arial";
+        this.ctx.fillStyle = "#666";
+        this.ctx.fillText(`BEST: ${highScore}`, 30, 80);
+        
+        this.ctx.restore();
+    }
 }

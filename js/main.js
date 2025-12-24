@@ -2,14 +2,24 @@ import { CONFIG, SHAPES } from './constants.js';
 import { pixelToHex } from './math.js';
 import { GridManager } from './GridManager.js';
 import { Renderer } from './Renderer.js';
+import { AudioManager } from './AudioManager.js';
 
-// 1. 初始化環境
+
+// Init
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const grid = new GridManager(CONFIG.RADIUS);
 const renderer = new Renderer(ctx);
+const audio = new AudioManager();
 
-// 2. 遊戲狀態管理
+audio.loadSounds({
+    pick: 'assets/pick.wav',
+    place: 'assets/place.wav',
+    clear: 'assets/clear.wav',
+    // error: 'assets/error.wav'
+});
+
+// Game State
 const state = {
     zones: { main: {}, sidebar: {} },
     selectionSlots: [
@@ -17,6 +27,12 @@ const state = {
         { shape: null, x: 0, y: 0, scale: 0.8, isDragging: false, color: null, originalPos: { x: 0, y: 0 } },
         { shape: null, x: 0, y: 0, scale: 0.8, isDragging: false, color: null, originalPos: { x: 0, y: 0 } }
     ],
+
+    // Score State
+    score: 0,
+    highScore: parseInt(localStorage.getItem('hex-high-score')) || 0,
+
+    // Mouse Dragging State
     isDragging: false,
     dragTarget: null,
     dragOffset: { x: 0, y: 0 },
@@ -24,7 +40,7 @@ const state = {
     previewHex: null // 用於顯示放置預覽
 };
 
-// 3. 核心邏輯函式
+// Main Functions
 function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -61,19 +77,21 @@ function updateZones() {
     });
 }
 
-// 4. 事件監聽處理
+// Event Listeners
 canvas.addEventListener('mousedown', (e) => {
     const rect = canvas.getBoundingClientRect();
     state.mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
     state.selectionSlots.forEach(slot => {
         if (!slot.shape) return;
+        audio.play('pick');
         const dist = Math.hypot(state.mousePos.x - slot.x, state.mousePos.y - slot.y);
         if (dist < CONFIG.HEX_SIZE * 2) {
             state.isDragging = true;
             state.dragTarget = slot;
             slot.isDragging = true;
             state.dragOffset = { x: state.mousePos.x - slot.x, y: state.mousePos.y - slot.y };
+            state.dragTarget.scale = 0.7;
         }
     });
 });
@@ -92,7 +110,7 @@ canvas.addEventListener('mousemove', (e) => {
             const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2);
             state.previewHex = grid.canPlace(hex, state.dragTarget.shape) ? hex : null;
         } else {
-            state.dragTarget.scale = Math.max(0.8, state.dragTarget.scale - 0.1);
+            state.dragTarget.scale = Math.max(0.7, state.dragTarget.scale - 0.1);
             state.previewHex = null;
         }
     }
@@ -102,11 +120,27 @@ canvas.addEventListener('mouseup', () => {
     if (!state.isDragging || !state.dragTarget) return;
 
     const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2);
-
+    
     if (grid.canPlace(hex, state.dragTarget.shape)) {
+        const placementScore = state.dragTarget.shape.coords.length * CONFIG.SCORE.PER_TILE;
+        state.score += placementScore;
+
         grid.place(hex, state.dragTarget.shape, state.dragTarget.color);
+        audio.play('place');
+
+        const linesCleared = grid.checkAndClearLines();
+        if (linesCleared > 0) {
+            const clearScore = Math.floor(linesCleared * CONFIG.SCORE.LINE_BASE * (1 + (linesCleared - 1) * CONFIG.SCORE.COMBO_BONUS));
+            state.score += clearScore;
+            audio.play('clear');
+        }
+
+        if (state.score > state.highScore) {
+            state.highScore = state.score;
+            localStorage.setItem('hex-high-score', state.highScore);
+        }
+
         state.dragTarget.shape = null;
-        grid.checkAndClearLines();
         spawnShapes();
     } else {
         // 彈回原位
@@ -123,13 +157,13 @@ canvas.addEventListener('mouseup', () => {
 
 window.addEventListener('resize', updateZones);
 
-// 5. 遊戲主迴圈 (Main Loop)
+// Main Game Loop
 function gameLoop() {
     renderer.clear();
     
-    // 繪製順序：背景網格 -> 預覽陰影 -> 側邊欄方塊 -> 拖拽中的方塊
     renderer.drawGrid(grid, state.zones.main);
-    
+    renderer.drawScore(state.score, state.highScore);
+
     if (state.previewHex && state.dragTarget) {
         renderer.drawPlacementPreview(state.previewHex, state.dragTarget.shape, state.zones.main);
     }
@@ -139,7 +173,7 @@ function gameLoop() {
     requestAnimationFrame(gameLoop);
 }
 
-// 6. 啟動遊戲
+// Start the Game
 updateZones();
 spawnShapes();
 gameLoop();
