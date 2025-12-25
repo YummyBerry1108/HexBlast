@@ -35,6 +35,10 @@ export class GridManager {
     checkAndClearLines() {
         let linesToClear = []; // 儲存所有需要消除的格子座標清單
         let clearedCount = 0;
+        let clearedInfo = {
+            grid: [],
+            linesCleared: 0
+        };
 
         // 1. 檢查 r 軸 (水平線)
         for (let r = -this.radius; r <= this.radius; r++) {
@@ -76,10 +80,16 @@ export class GridManager {
         // 執行消除 (使用 Set 避免重複消除交叉點的格子)
         const uniqueCoords = [...new Set(linesToClear)];
         uniqueCoords.forEach(key => {
+            clearedInfo.grid.push({
+                q: parseInt(key.split(',')[0]),
+                r: parseInt(key.split(',')[1]),
+                color: this.gridState.get(key).color
+            });
             this.gridState.set(key, { occupied: false, color: null });
         });
-
-        return clearedCount;
+        clearedInfo.linesCleared = clearedCount;
+        
+        return clearedInfo;
     }
 
     isLineFull(lineKeys) {

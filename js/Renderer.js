@@ -16,6 +16,71 @@ export class Renderer {
     }
 
     /**
+     * 繪製菜單
+     */
+    drawMenu() {
+        const { width, height } = this.ctx.canvas;
+        this.ctx.fillStyle = "#000000cc";
+        this.ctx.fillRect(0, 0, width, height);
+
+        this.ctx.save();
+        this.ctx.fillStyle = "#d6d6d6ff";
+        this.ctx.font = "bold 24px Arial";
+        this.ctx.textAlign = "center";
+        
+        // 繪製目前分數
+        this.ctx.fillText(`START GAME`, width / 2, height / 2);
+        this.ctx.fillText(`PRESS ANY KEY`, width / 2, height / 2 + 40);
+    }
+
+    /**
+     * 繪製遊戲結束畫面
+     * @param {number} score - 當前分數
+     * @param {number} highScore - 最高分
+     */
+    drawEndScreen(score, highScore) {
+        const { width, height } = this.ctx.canvas;
+        this.ctx.fillStyle = "#000000cc";
+        this.ctx.fillRect(0, 0, width, height);
+
+        this.ctx.save();
+        this.ctx.fillStyle = "#d6d6d6ff";
+        this.ctx.font = "bold 24px Arial";
+        this.ctx.textAlign = "center";
+
+        // 繪製目前分數
+        this.ctx.fillText(`GAME OVER`, width / 2, height / 2);
+        this.ctx.fillText(`SCORE: ${score}`, width / 2, height / 2 + 40);
+        this.ctx.fillText(`HIGH SCORE: ${highScore}`, width / 2, height / 2 + 80);
+    }
+
+    /**
+     * 繪製分區背景與邊界
+     * @param {Object} zones - 包含 main 與 sidebar 的座標資訊
+     */
+    drawZonesBackground(zones) {
+        const { main, sidebar } = zones;
+
+        this.ctx.fillStyle = "#1a1a1a";
+        this.ctx.fillRect(main.x, main.y, main.width, main.height);
+
+        this.ctx.fillStyle = "#222222";
+        this.ctx.fillRect(sidebar.x, sidebar.y, sidebar.width, sidebar.height);
+
+        this.ctx.strokeStyle = "#333333";
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(sidebar.x, 0);
+        this.ctx.lineTo(sidebar.x, sidebar.height);
+        this.ctx.stroke();
+
+        const gradient = this.ctx.createLinearGradient(sidebar.x - 20, 0, sidebar.x, 0);
+        gradient.addColorStop(0, "rgba(0,0,0,0)");
+        gradient.addColorStop(1, "rgba(0,0,0,0.5)");
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(sidebar.x - 20, 0, 20, sidebar.height);
+    }
+    /**
      * 繪製單個六邊形
      * @param {number} x - 像素 X
      * @param {number} y - 像素 Y
@@ -111,7 +176,7 @@ export class Renderer {
      */
     drawScore(score, highScore) {
         this.ctx.save();
-        this.ctx.fillStyle = "#333";
+        this.ctx.fillStyle = "#d6d6d6ff";
         this.ctx.font = "bold 24px Arial";
         this.ctx.textAlign = "left";
         
@@ -120,9 +185,30 @@ export class Renderer {
         
         // 繪製最高分
         this.ctx.font = "16px Arial";
-        this.ctx.fillStyle = "#666";
+        this.ctx.fillStyle = "#898888ff";
         this.ctx.fillText(`BEST: ${highScore}`, 30, 80);
         
         this.ctx.restore();
+    }
+
+    renderFX(fxManager) {
+        fxManager.particles.forEach(p => {
+            this.ctx.globalAlpha = p.life;
+            this.ctx.fillStyle = p.color;
+            this.ctx.fillRect(p.x, p.y, p.size, p.size);
+        });
+        this.ctx.globalAlpha = 1.0;
+    }
+
+
+    applyShake(fxManager) {
+        if (fxManager.shakeTime > 0) {
+            const dx = (Math.random() - 0.5) * fxManager.shakeIntensity;
+            const dy = (Math.random() - 0.5) * fxManager.shakeIntensity;
+            this.ctx.translate(dx, dy);
+        }
+        else {
+            this.ctx.setTransform(1, 0, 0, 1, 0, 0); 
+        }
     }
 }

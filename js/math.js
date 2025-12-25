@@ -15,3 +15,9 @@ export function pixelToHex(px, py, centerX, centerY) {
     const r = (2/3 * currY) / CONFIG.HEX_SIZE;
     return hexRound(q, r);
 }
+
+export function hexToPixel(q, r, centerX, centerY) {
+    const x = CONFIG.HEX_SIZE * Math.sqrt(3) * (q + r / 2) + centerX;
+    const y = CONFIG.HEX_SIZE * 3 / 2 * r + centerY;
+    return { x, y };
+}

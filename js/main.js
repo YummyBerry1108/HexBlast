@@ -1,9 +1,10 @@
 import { CONFIG, SHAPES } from './constants.js';
 import { pixelToHex } from './math.js';
+import { hexToPixel } from './math.js';
 import { GridManager } from './GridManager.js';
 import { Renderer } from './Renderer.js';
 import { AudioManager } from './AudioManager.js';
-
+import { FXManager } from './FXManager.js';
 
 // Init
 const canvas = document.getElementById('gameCanvas');
@@ -11,6 +12,7 @@ const ctx = canvas.getContext('2d');
 const grid = new GridManager(CONFIG.RADIUS);
 const renderer = new Renderer(ctx);
 const audio = new AudioManager();
+const fxManager = new FXManager();
 
 audio.loadSounds({
     pick: 'assets/pick.wav',
@@ -79,6 +81,7 @@ function updateZones() {
 
 // Event Listeners
 canvas.addEventListener('mousedown', (e) => {
+    gameState = CONFIG.GAME_STATE.GAME;
     const rect = canvas.getBoundingClientRect();
     state.mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
@@ -128,11 +131,31 @@ canvas.addEventListener('mouseup', () => {
         grid.place(hex, state.dragTarget.shape, state.dragTarget.color);
         audio.play('place');
 
-        const linesCleared = grid.checkAndClearLines();
+        const clearInfo = grid.checkAndClearLines();
+        const uniqueCoords = clearInfo.grid;
+        const linesCleared = clearInfo.linesCleared;
+
+        uniqueCoords.forEach(key => {
+
+            const pixelPos = hexToPixel(
+                parseInt(key.q),
+                parseInt(key.r),
+                state.zones.main.width / 2,
+                state.zones.main.height / 2
+            );
+
+            fxManager.createExplosion(
+                pixelPos.x,
+                pixelPos.y,
+                key.color
+            );
+        });
+
         if (linesCleared > 0) {
             const clearScore = Math.floor(linesCleared * CONFIG.SCORE.LINE_BASE * (1 + (linesCleared - 1) * CONFIG.SCORE.COMBO_BONUS));
             state.score += clearScore;
             audio.play('clear');
+            fxManager.triggerShake(5, 15);
         }
 
         if (state.score > state.highScore) {
@@ -155,12 +178,20 @@ canvas.addEventListener('mouseup', () => {
     state.previewHex = null;
 });
 
+window.addEventListener('keydown', (e) => {
+    gameState = CONFIG.GAME_STATE.GAME;
+    console.log('Game Started', gameState);
+});
+
 window.addEventListener('resize', updateZones);
 
 // Main Game Loop
-function gameLoop() {
+
+function gameScene() {
+    fxManager.update();
     renderer.clear();
-    
+
+    renderer.drawZonesBackground(state.zones);
     renderer.drawGrid(grid, state.zones.main);
     renderer.drawScore(state.score, state.highScore);
 
@@ -169,7 +200,32 @@ function gameLoop() {
     }
 
     renderer.drawSelectionSlots(state.selectionSlots);
+    renderer.renderFX(fxManager);
+    renderer.applyShake(fxManager);
+}
 
+function menuScene() {
+    renderer.clear();
+    renderer.drawMenu();
+}
+
+function endScene() {
+    renderer.clear();
+    renderer.drawEndScreen(state.score, state.highScore);
+}
+
+let gameState = CONFIG.GAME_STATE.MENU;
+
+function gameLoop() {
+    if (gameState === CONFIG.GAME_STATE.GAME) {
+        gameScene();
+    } 
+    else if (gameState === CONFIG.GAME_STATE.MENU) {
+        menuScene();
+    }
+    else if (gameState === CONFIG.GAME_STATE.OVER) {
+        endScene();
+    }
     requestAnimationFrame(gameLoop);
 }
 
