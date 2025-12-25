@@ -32,6 +32,7 @@ const state = {
 
     // Score State
     score: 0,
+    endScore: 0,
     highScore: parseInt(localStorage.getItem('hex-high-score')) || 0,
 
     // Mouse Dragging State
@@ -77,6 +78,15 @@ function updateZones() {
             slot.y = targetY;
         }
     });
+}
+
+function checkGameOver() {
+    for (const slot of state.selectionSlots) {
+        if (slot.shape && grid.canPlaceAny(slot.shape)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // Event Listeners
@@ -180,7 +190,6 @@ canvas.addEventListener('mouseup', () => {
 
 window.addEventListener('keydown', (e) => {
     gameState = CONFIG.GAME_STATE.GAME;
-    console.log('Game Started', gameState);
 });
 
 window.addEventListener('resize', updateZones);
@@ -188,12 +197,20 @@ window.addEventListener('resize', updateZones);
 // Main Game Loop
 
 function gameScene() {
+    if(checkGameOver()){
+        gameState = CONFIG.GAME_STATE.OVER;
+        state.endScore = state.score;
+        state.score = 0;
+        grid.init();
+        spawnShapes();
+        return;
+    } 
     fxManager.update();
     renderer.clear();
 
     renderer.drawZonesBackground(state.zones);
     renderer.drawGrid(grid, state.zones.main);
-    renderer.drawScore(state.score, state.highScore);
+    renderer.drawScore(state.endScore, state.highScore);
 
     if (state.previewHex && state.dragTarget) {
         renderer.drawPlacementPreview(state.previewHex, state.dragTarget.shape, state.zones.main);

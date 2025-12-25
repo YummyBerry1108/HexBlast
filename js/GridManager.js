@@ -25,6 +25,17 @@ export class GridManager {
         if (!cell || cell.occupied) return false;
     }
     return true;}
+
+    canPlaceAny(shape) {
+        for (let [key, cell] of this.gridState) {
+            if (!cell.occupied) {
+                const center = { q: parseInt(key.split(',')[0]), r: parseInt(key.split(',')[1]) };
+                if (this.canPlace(center, shape)) return true;
+            }
+        }
+        return false;
+    }
+
     place(center, shape, color) {
         shape.coords.forEach(relCoord => {
             const q = center.q + relCoord[0];
