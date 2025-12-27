@@ -13,7 +13,8 @@ export class FXManager {
     createExplosion(x, y, color, life = 1.0, prelife = 0, particleCount = 8) {
         for (let i = 0; i < particleCount; i++) {
             this.particles.push({
-                x, y,
+                x: x, 
+                y: y,
                 vx: (Math.random() - 0.5) * 10,
                 vy: (Math.random() - 0.5) * 10,
                 life: life,
@@ -30,6 +31,20 @@ export class FXManager {
     triggerShake(intensity, duration) {
         this.shakeIntensity = intensity;
         this.shakeTime = duration;
+    }
+
+    createFloatingText(x, y, text, color) {
+        this.particles.push({
+            type: 'text',
+            x: x,
+            y: y,
+            text: text,
+            color: color,
+            vx: 0,
+            vy: -2,    // 向上飄
+            alpha: 1,
+            life: 1.0
+        });
     }
 
     update() {

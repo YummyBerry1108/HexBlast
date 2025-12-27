@@ -1,4 +1,5 @@
 import { CONFIG } from './constants.js';
+import { Theme } from './Theme.js';
 
 export class NumberDisplay {
     constructor(ctx) {
@@ -27,9 +28,9 @@ export class NumberDisplay {
      * 繪製單個段落
      */
     drawSegment(x, y, width, height, isHorizontal, isActive) {
-        this.ctx.fillStyle = isActive ? "#00FF99" : "#2d2d2d"; // 亮色/背景暗色
+        this.ctx.fillStyle = isActive ? Theme.get('displayActive') : Theme.get('displayIdle'); // 亮色/背景暗色
         this.ctx.shadowBlur = isActive ? 10 : 0;
-        this.ctx.shadowColor = "#00FF99";
+        this.ctx.shadowColor = Theme.get('displayActive');
         
         // 繪製六邊形或菱形風格的段落
         this.ctx.fillRect(x, y, width, height); 
@@ -74,7 +75,7 @@ export class NumberDisplay {
         const charHeight = size * 2 + size * 0.6; // 單個數字高度
         const padding = 10;                // 內邊距
 
-        // 1. 計算總寬度並繪製外框背景
+        // 計算總寬度並繪製外框背景
         const totalWidth = maxDigits * spacing + padding;
         const totalHeight = charHeight + padding * 2;
 
@@ -83,25 +84,22 @@ export class NumberDisplay {
         this.ctx.strokeStyle = "#333";     // 邊框顏色
         this.ctx.fillStyle = "#111";       // 顯示器底色
         
-        // 繪製圓角矩形 (或一般矩形)
+        // 繪製圓角矩形 
         this.ctx.beginPath();
         this.ctx.roundRect(x - padding, y - padding, totalWidth, totalHeight, 5);
         this.ctx.fill();
         this.ctx.stroke();
 
-        // 2. 處理數字字串 (固定位數，不足補 0 或空格)
-        // 使用 '0' 補齊，若想讓前方不顯示則改用 .padStart(maxDigits, ' ')
+        // 處理數字字串 (固定位數，不足補 0 或空格)
         const scoreStr = score.toString().padStart(maxDigits, '0');
 
-        // 3. 繪製數字
+        // 繪製數字
         for (let i = 0; i < scoreStr.length; i++) {
             const char = scoreStr[i];
             const posX = x + i * spacing;
             
-            // 繪製背景底色段落 (選擇性：增加真實感)
             this.drawDigitBackground(posX, y, size);
-            
-            // 繪製實際數字
+
             if (char !== ' ') {
                 this.drawDigit(char, posX, y, size);
             }
@@ -109,11 +107,11 @@ export class NumberDisplay {
     }
 
     /**
-     * 繪製暗色的 8 作為背景底色 (電子鐘常見視覺)
+     * 繪製暗色的 8 作為背景底色
      */
     drawDigitBackground(x, y, size) {
         this.ctx.save();
-        this.ctx.globalAlpha = 0.05; // 極低透明度
+        this.ctx.globalAlpha = 0.05; 
         this.drawDigit('8', x, y, size);
         this.ctx.restore();
     }

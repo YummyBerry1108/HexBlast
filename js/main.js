@@ -5,6 +5,7 @@ import { GridManager } from './GridManager.js';
 import { Renderer } from './Renderer.js';
 import { AudioManager } from './AudioManager.js';
 import { FXManager } from './FXManager.js';
+import { Theme } from './Theme.js';
 
 // Init
 const canvas = document.getElementById('gameCanvas');
@@ -37,7 +38,7 @@ const state = {
 
     // Mouse Dragging State
     isDragging: false,
-    dragTarget: null,
+    dragTarget: null, // slot
     dragOffset: { x: 0, y: 0 },
     mousePos: { x: 0, y: 0 },
     previewHex: null // 用於顯示放置預覽
@@ -146,7 +147,6 @@ canvas.addEventListener('mouseup', () => {
         const clearInfo = grid.checkAndClearLines();
         const uniqueCoords = clearInfo.grid;
         const linesCleared = clearInfo.linesCleared;
-        let prelife = 0.1;
         uniqueCoords.forEach(key => {
 
             const pixelPos = hexToPixel(
@@ -161,16 +161,18 @@ canvas.addEventListener('mouseup', () => {
                 pixelPos.y,
                 key.color,
                 0.5,
-                prelife
+                0
             );
-            prelife += 0.05;
+
         });
 
         if (linesCleared > 0) {
             const clearScore = Math.floor(linesCleared * CONFIG.SCORE.LINE_BASE * (1 + (linesCleared - 1) * CONFIG.SCORE.COMBO_BONUS));
             state.score += clearScore;
             audio.play('clear');
+            fxManager.createFloatingText(state.dragTarget.x, state.dragTarget.y, `+${clearScore}`, state.dragTarget.color);
             fxManager.triggerShake(5, 15);
+            if (linesCleared >= 3) Theme.nextTheme();
         }
 
         if (state.score > state.highScore) {
@@ -226,9 +228,10 @@ function gameScene() {
         return;
     }
     
-    if (grid.updateDissolve()) audio.play('place');
-    
-
+    if (grid.updateDissolve()) {
+        audio.play('place');
+        Theme.nextTheme();
+    }
 
     fxManager.update();
     renderer.clear();

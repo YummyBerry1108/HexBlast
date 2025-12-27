@@ -1,7 +1,7 @@
 export const CONFIG = {
     FPS: 60,
     HEX_SIZE: 35,
-    RADIUS: 5,
+    RADIUS: 3,
     COLORS: ['#FF5733', '#33FF57', '#3357FF', '#F1C40F', '#9B59B6'],
     SCORE: {
         PER_TILE: 10,       // 放置每個小方塊得 10 分
@@ -12,10 +12,11 @@ export const CONFIG = {
     // Grid Settings
     DELTA_Y: 50,
 
-
     // Score Display Settings
     SCORE_SPACE: 1.8,
-    MAX_DIGITS: 8
+    MAX_DIGITS: 8,
+    FOREGROUND_COLOR: '#d00000',
+    BACKGROUND_COLOR: '#430000'
 };
 
 export const SHAPES = [
@@ -27,4 +28,5 @@ export const SHAPES = [
     { name: 'Hex', coords: [[0,0], [-1,1], [-1,0], [0,-1], [1,0], [1,-1], [0,1]] },
     { name: 'Hourglass', coords: [[0,0], [-1,1], [0,-1], [1,-1], [0,1]] },
     { name: 'Fan', coords: [[0,0], [-1,1], [0,-1], [1,0]] },
+    { name: 'Crystal', coords: [[0,0], [-1,1], [0,-1], [-1,0]] },
 ];

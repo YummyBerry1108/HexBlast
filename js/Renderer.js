@@ -186,10 +186,33 @@ export class Renderer {
 
     renderFX(fxManager) {
         fxManager.particles.forEach(p => {
-            if (p.prelife > 0) return;
-            this.ctx.globalAlpha = p.life;
-            this.ctx.fillStyle = p.color;
-            this.ctx.fillRect(p.x, p.y, p.size, p.size);
+            if (p.type === 'text') {
+                this.ctx.save();
+                const gradient = this.ctx.createLinearGradient(p.x, p.y - 25, p.x, p.y + 25);
+                gradient.addColorStop(0, "white");
+                gradient.addColorStop(1, p.color);
+                this.ctx.fillStyle = gradient;
+                this.ctx.globalAlpha = p.alpha;
+                this.ctx.font = "bold 50px 'Orbitron'";
+                this.ctx.fillText(p.text, p.x, p.y);
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = p.color;
+                
+                this.ctx.fillStyle = "white"; 
+                this.ctx.fillText(p.text, p.x, p.y);
+
+                this.ctx.shadowBlur = 0;
+                this.ctx.strokeStyle = p.color;
+                this.ctx.lineWidth = 2;
+                this.ctx.strokeText(p.text, p.x, p.y);
+                this.ctx.restore();
+                p.vy *= 0.95
+            } else {
+                if (p.prelife > 0) return;
+                this.ctx.globalAlpha = p.life;
+                this.ctx.fillStyle = p.color;
+                this.ctx.fillRect(p.x, p.y, p.size, p.size);
+            }
         });
         this.ctx.globalAlpha = 1.0;
     }
