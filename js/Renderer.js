@@ -1,5 +1,6 @@
 import { CONFIG } from './constants.js';
 import { NumberDisplay } from './NumberDisplay.js';
+import { Theme } from './Theme.js';
 
 export class Renderer {
     /**
@@ -39,12 +40,37 @@ export class Renderer {
      * 繪製目前遊戲分數
      * @param {number} score - 當前分數
      * @param {number} highScore - 最高分
+     * @param {Object} comboState - combo狀態
      */
-    drawDisplayScore(score, highScore) {
+    drawDisplayScore(score, highScore, comboState) {
         const { width, height } = this.ctx.canvas;
         const size = 20
-        this.numberDisplay.drawScore(score, width*0.75 / 2  - 140, 40, size);
-        // this.numberDisplay.drawScore(highScore, 30, 110, size);
+        const x = width * 0.75 /2 - 140;
+        const y = 25;
+        const totalWidth = size * 9 + 50;
+
+        this.numberDisplay.drawScore(score, width*0.75 / 2  - 140, y, size);
+
+        if (comboState.count > 0) {
+            const progress = comboState.timer / comboState.maxTime;
+            const barY = y + size * 2 + 25; // 根據數字高度動態計算 Y 軸
+            
+            this.numberDisplay.drawComboBar(
+                x - 5, 
+                barY, 
+                totalWidth, 
+                progress, 
+                Theme.get('displayActive')
+            );
+
+            // 3. (選擇性) 顯示 Combo 字樣
+            this.ctx.save();
+            this.ctx.textAlign = "left";
+            this.ctx.fillStyle = Theme.get('displayActive');
+            this.ctx.font = `bold 14px 'Orbitron'`;
+            this.ctx.fillText(`COMBO X${comboState.count}`, x, barY + 25);
+            this.ctx.restore();
+        }
     }
 
     /**
@@ -193,7 +219,7 @@ export class Renderer {
                 gradient.addColorStop(1, p.color);
                 this.ctx.fillStyle = gradient;
                 this.ctx.globalAlpha = p.alpha;
-                this.ctx.font = "bold 50px 'Orbitron'";
+                this.ctx.font = `bold ${p.size}px 'Orbitron'`;
                 this.ctx.fillText(p.text, p.x, p.y);
                 this.ctx.shadowBlur = 15;
                 this.ctx.shadowColor = p.color;

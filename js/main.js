@@ -35,6 +35,11 @@ const state = {
     score: 0,
     endScore: 0,
     highScore: parseInt(localStorage.getItem('hex-high-score')) || 0,
+    combo: {
+        count: 0,
+        timer: 0,
+        maxTime: 10000, // ms
+    },
 
     // Mouse Dragging State
     isDragging: false,
@@ -177,10 +182,14 @@ canvas.addEventListener('mouseup', () => {
         if (linesCleared > 0) {
             const clearScore = Math.floor(linesCleared * CONFIG.SCORE.LINE_BASE * (1 + (linesCleared - 1) * CONFIG.SCORE.COMBO_BONUS));
             state.score += clearScore;
+            state.combo.count += 1;
+            state.combo.timer = state.combo.maxTime; // 重置連擊計時器
             audio.play('clear');
-            fxManager.createFloatingText(state.dragTarget.x, state.dragTarget.y, `+${clearScore}`, state.dragTarget.color);
+            fxManager.createFloatingText(state.dragTarget.x, state.dragTarget.y, `+${clearScore}`, state.dragTarget.color, 50);
+            fxManager.createFloatingText(state.dragTarget.x, state.dragTarget.y + 30, `COMBO x${state.combo.count}`, state.dragTarget.color, 30);
             fxManager.triggerShake(linesCleared * 5, 15);
-            if (linesCleared >= 3) Theme.nextTheme();
+            if (linesCleared >= 3 || state.combo.count >= 5) Theme.nextTheme();
+            
         }
 
         if (state.score > state.highScore) {
@@ -216,7 +225,7 @@ window.addEventListener('resize', updateZones);
 
 // Main Game Loop
 
-function gameScene() {
+function gameLogic() {
     if(checkGameOver() && !gameFinished){
         gameFinished = true;
         state.endScore = state.score;
@@ -245,7 +254,19 @@ function gameScene() {
         Theme.nextTheme();
     }
 
+    if (state.combo.timer > 0) {
+        state.combo.timer -= 1 / CONFIG.FPS * 1000;
+        if (state.combo.timer <= 0) {
+            // 連擊結束，重置
+            state.combo.count = 0;
+            Theme.setTheme('lava'); // 切換回普通主題
+        }
+    }
+
     fxManager.update();
+}
+
+function gameRender() {
     renderer.clear();
 
     renderer.drawZonesBackground(state.zones);
@@ -256,10 +277,15 @@ function gameScene() {
         renderer.drawPlacementPreview(state.previewHex, state.dragTarget.shape, state.zones.main);
     }
 
-    renderer.drawDisplayScore(state.score, state.highScore);
+    renderer.drawDisplayScore(state.score, state.highScore, state.combo);
     renderer.drawSelectionSlots(state.selectionSlots);
     renderer.renderFX(fxManager);
     renderer.applyShake(fxManager);
+}
+
+function gameScene() {
+    gameLogic();
+    gameRender();
 }
 
 function menuScene() {

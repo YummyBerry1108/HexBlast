@@ -33,13 +33,14 @@ export class FXManager {
         this.shakeTime = duration;
     }
 
-    createFloatingText(x, y, text, color) {
+    createFloatingText(x, y, text, color, size = 50) {
         this.particles.push({
             type: 'text',
             x: x,
             y: y,
             text: text,
             color: color,
+            size: size,
             vx: 0,
             vy: -2,    // 向上飄
             alpha: 1,

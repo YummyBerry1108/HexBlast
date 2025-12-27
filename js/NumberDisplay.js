@@ -115,4 +115,41 @@ export class NumberDisplay {
         this.drawDigit('8', x, y, size);
         this.ctx.restore();
     }
+
+    /**
+     * 繪製連擊進度條
+     * @param {number} x, y - 起始座標
+     * @param {number} width - 寬度
+     * @param {number} progress - 進度比例 (0.0 ~ 1.0)
+     * @param {string} color - 進度條顏色
+     */
+    drawComboBar(x, y, width, progress, color) {
+        const height = 8; 
+        const padding = 2;
+
+        this.ctx.fillStyle = "#222";
+        this.ctx.beginPath();
+        this.ctx.roundRect(x, y, width, height, height / 2);
+        this.ctx.fill();
+
+        if (progress <= 0.025) return;
+
+        this.ctx.save();
+        
+        if (progress < 0.3 && Math.floor(Date.now() / 200) % 2 === 0) {
+            this.ctx.fillStyle = "#FF3333";
+        } else {
+            this.ctx.fillStyle = color;
+        }
+
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowColor = this.ctx.fillStyle;
+
+        const currentWidth = Math.max(0, width * progress);
+        this.ctx.beginPath();
+        this.ctx.roundRect(x + padding, y + padding, currentWidth - padding * 2, height - padding * 2, height / 2);
+        this.ctx.fill();
+        
+        this.ctx.restore();
+    }
 }
