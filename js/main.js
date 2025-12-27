@@ -10,8 +10,8 @@ import { Theme } from './Theme.js';
 // Init
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const grid = new GridManager(CONFIG.RADIUS);
 const renderer = new Renderer(ctx);
+const grid = new GridManager(CONFIG.DEFAULT_RADIUS);
 const audio = new AudioManager();
 const fxManager = new FXManager();
 
@@ -45,6 +45,15 @@ const state = {
 };
 
 // Main Functions
+function newGame(newRadius) {
+    if (gameState === CONFIG.GAME_STATE.GAME) return;
+    gameState = CONFIG.GAME_STATE.GAME;
+    gameFinished = false;
+    grid.init(newRadius);
+    spawnShapes();
+}
+
+
 function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
@@ -92,8 +101,7 @@ function checkGameOver() {
 
 // Event Listeners
 canvas.addEventListener('mousedown', (e) => {
-    gameState = CONFIG.GAME_STATE.GAME;
-    gameFinished = false;
+    newGame(CONFIG.DEFAULT_RADIUS);
 
     const rect = canvas.getBoundingClientRect();
     state.mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -196,8 +204,12 @@ canvas.addEventListener('mouseup', () => {
 });
 
 window.addEventListener('keydown', (e) => {
-    gameState = CONFIG.GAME_STATE.GAME;
-    gameFinished = false;
+    let newRadius = CONFIG.DEFAULT_RADIUS;
+    if ('1' < e.key && e.key <= '5' && gameState !== CONFIG.GAME_STATE.GAME){
+        newRadius = parseInt(e.key);
+        console.log('Set grid radius to', newRadius);
+    } 
+    newGame(newRadius);
 });
 
 window.addEventListener('resize', updateZones);
@@ -258,8 +270,6 @@ function menuScene() {
 function endScene() {
     renderer.clear();
     renderer.drawEndScreen(state.endScore, state.highScore);
-    grid.init();
-    spawnShapes();
 }
 
 let gameState = CONFIG.GAME_STATE.MENU;

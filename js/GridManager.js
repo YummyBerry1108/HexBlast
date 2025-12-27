@@ -7,7 +7,10 @@ export class GridManager {
         this.init();
     }
 
-    init() {
+    init(newRadius = CONFIG.DEFAULT_RADIUS) {
+        this.radius = newRadius;
+        this.gridState.clear();
+
         for (let q = -this.radius; q <= this.radius; q++) {
             let r1 = Math.max(-this.radius, -q - this.radius);
             let r2 = Math.min(this.radius, -q + this.radius);
