@@ -104,6 +104,7 @@ function getWeightedRandom(items) {
 function spawnSafeShapes() {
     let attempts = 0;
     while (attempts < 100) { // 防止無窮迴圈
+        console.log('嘗試次數:', attempts + 1);
         const testShapes = [getWeightedRandom(SHAPES), getWeightedRandom(SHAPES), getWeightedRandom(SHAPES)];
         
         // 取得目前真實網格的副本
@@ -166,31 +167,33 @@ function updateZones() {
  */
 function solve(currentState, remainingShapes, hasClear) {
     // 基本情況：所有方塊都成功放下
+    let notoccupiedCount = 0;
+    let totalCount = CONFIG.DEFAULT_RADIUS * CONFIG.DEFAULT_RADIUS * 3 + CONFIG.DEFAULT_RADIUS * 3 + 1;
+    for (let [key, cell] of currentState) {
+        if (!cell.occupied) notoccupiedCount++;
+    }
+    console.log('目前空格數:', notoccupiedCount, '總格數:', totalCount);
     if (remainingShapes.length === 0){
-        if (hasClear) return true;
-        else return true;
+        console.log('所有方塊已放置完畢');
+        console.log('是否有消除:', hasClear);
+        if (hasClear || notoccupiedCount / totalCount > CONFIG.NEED_CLEAR_RATIO) return true;
+        else return false;
     } 
-    // return true;
 
     const currentShape = remainingShapes[0];
     const nextShapes = remainingShapes.slice(1);
 
-    // 遍歷網格中所有可能的起始位置
     for (let [key] of currentState) {
         const [q, r] = key.split(',').map(Number);
         const hex = { q, r };
 
-        // 1. 嘗試放置
         let newState = grid.testPlace(currentState, hex, currentShape);
         
         if (newState) {
-            // 2. 模擬消除
             let {tempState, hasCleared} = grid.testClear(newState);
             newState = tempState;
-            // 3. 遞迴嘗試下一塊
-            if (solve(newState, nextShapes, hasCleared)) return true;
+            if (solve(newState, nextShapes, hasCleared || hasClear)) return true;
         }
-        // 回溯：if 失敗，迴圈會繼續嘗試下一個位置
     }
 
     return false;

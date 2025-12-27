@@ -166,6 +166,11 @@ export class GridManager {
         return newMap;
     }
 
+    testLineFull(lineKeys, tempState) {
+        if (lineKeys.length === 0) return false;
+        return lineKeys.every(key => tempState.get(key).occupied);
+    }
+
     // 純邏輯：嘗試放置方塊並回傳新的網格狀態（若無法放置則回傳 null）
     testPlace(tempState, hex, shape) {
         const newState = this.cloneGridState(tempState);
@@ -190,7 +195,7 @@ export class GridManager {
             for (let q = -this.radius; q <= this.radius; q++) {
                 if (tempState.has(`${q},${r}`)) line.push(`${q},${r}`);
             }
-            if (this.isLineFull(line)) {
+            if (this.testLineFull(line, tempState)) {
                 linesToClear.push(...line);
                 hasCleared = true;
             }
@@ -202,7 +207,7 @@ export class GridManager {
             for (let r = -this.radius; r <= this.radius; r++) {
                 if (tempState.has(`${q},${r}`)) line.push(`${q},${r}`);
             }
-            if (this.isLineFull(line)) {
+            if (this.testLineFull(line, tempState)) {
                 linesToClear.push(...line);
                 hasCleared = true;
             }
@@ -215,7 +220,7 @@ export class GridManager {
                 let r = k - q; // 因為 q + r = k
                 if (tempState.has(`${q},${r}`)) line.push(`${q},${r}`);
             }
-            if (this.isLineFull(line)) {
+            if (this.testLineFull(line, tempState)) {
                 linesToClear.push(...line);
                 hasCleared = true;
             }
@@ -224,11 +229,6 @@ export class GridManager {
         // 執行消除
         const uniqueCoords = [...new Set(linesToClear)];
         uniqueCoords.forEach(key => {
-            clearedInfo.grid.push({
-                q: parseInt(key.split(',')[0]),
-                r: parseInt(key.split(',')[1]),
-                color: this.gridState.get(key).color
-            });
             tempState.set(key, { occupied: false, color: null });
         });
 

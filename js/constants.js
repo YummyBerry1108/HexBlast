@@ -9,6 +9,7 @@ export const CONFIG = {
         COMBO_BONUS: 0.5    // 同時消除多行時的加成倍率
     },
     GAME_STATE: { MENU: 0, GAME: 1, OVER: 2 },
+    NEED_CLEAR_RATIO: 0.25, // 當前空格比例超過此值則不要求必須消除
     // Grid Settings
     DELTA_Y: 50,
 
