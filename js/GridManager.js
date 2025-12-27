@@ -19,14 +19,15 @@ export class GridManager {
 
     canPlace(center, shape) {
         for (let relCoord of shape.coords) {
-        const q = center.q + relCoord[0];
-        const r = center.r + relCoord[1];
-        const cell = this.gridState.get(`${q},${r}`);
+            const q = center.q + relCoord[0];
+            const r = center.r + relCoord[1];
+            const cell = this.gridState.get(`${q},${r}`);
 
-        // 若超出邊界或已被佔據，則不能放置
-        if (!cell || cell.occupied) return false;
+            // 若超出邊界或已被佔據，則不能放置
+            if (!cell || cell.occupied) return false;
+        }
+        return true;
     }
-    return true;}
 
     canPlaceAny(shape) {
         for (let [key, cell] of this.gridState) {

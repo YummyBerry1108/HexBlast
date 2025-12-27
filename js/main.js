@@ -122,7 +122,7 @@ canvas.addEventListener('mousemove', (e) => {
         // 處理縮放與預覽邏輯
         if (state.dragTarget.x < state.zones.main.width) {
             state.dragTarget.scale = Math.min(1.0, state.dragTarget.scale + 0.1);
-            const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2);
+            const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2 + CONFIG.DELTA_Y);
             state.previewHex = grid.canPlace(hex, state.dragTarget.shape) ? hex : null;
         } else {
             state.dragTarget.scale = Math.max(0.7, state.dragTarget.scale - 0.1);
@@ -134,7 +134,7 @@ canvas.addEventListener('mousemove', (e) => {
 canvas.addEventListener('mouseup', () => {
     if (!state.isDragging || !state.dragTarget) return;
 
-    const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2);
+    const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2 + CONFIG.DELTA_Y);
     
     if (grid.canPlace(hex, state.dragTarget.shape)) {
         const placementScore = state.dragTarget.shape.coords.length * CONFIG.SCORE.PER_TILE;
@@ -235,12 +235,13 @@ function gameScene() {
 
     renderer.drawZonesBackground(state.zones);
     renderer.drawGrid(grid, state.zones.main);
-    renderer.drawScore(state.score, state.highScore);
+    // renderer.drawScore(state.score, state.highScore);
 
     if (state.previewHex && state.dragTarget) {
         renderer.drawPlacementPreview(state.previewHex, state.dragTarget.shape, state.zones.main);
     }
 
+    renderer.drawDisplayScore(state.score, state.highScore);
     renderer.drawSelectionSlots(state.selectionSlots);
     renderer.renderFX(fxManager);
     renderer.applyShake(fxManager);

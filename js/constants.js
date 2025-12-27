@@ -8,7 +8,14 @@ export const CONFIG = {
         LINE_BASE: 100,     // 消除一行得 100 分
         COMBO_BONUS: 0.5    // 同時消除多行時的加成倍率
     },
-    GAME_STATE: { MENU: 0, GAME: 1, OVER: 2 }
+    GAME_STATE: { MENU: 0, GAME: 1, OVER: 2 },
+    // Grid Settings
+    DELTA_Y: 50,
+
+
+    // Score Display Settings
+    SCORE_SPACE: 1.8,
+    MAX_DIGITS: 8
 };
 
 export const SHAPES = [

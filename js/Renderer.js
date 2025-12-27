@@ -1,4 +1,5 @@
 import { CONFIG } from './constants.js';
+import { NumberDisplay } from './NumberDisplay.js';
 
 export class Renderer {
     /**
@@ -6,6 +7,7 @@ export class Renderer {
      */
     constructor(ctx) {
         this.ctx = ctx;
+        this.numberDisplay = new NumberDisplay(ctx);
     }
 
     /**
@@ -31,6 +33,18 @@ export class Renderer {
         // 繪製目前分數
         this.ctx.fillText(`START GAME`, width / 2, height / 2);
         this.ctx.fillText(`PRESS ANY KEY`, width / 2, height / 2 + 40);
+    }
+
+    /**
+     * 繪製目前遊戲分數
+     * @param {number} score - 當前分數
+     * @param {number} highScore - 最高分
+     */
+    drawDisplayScore(score, highScore) {
+        const { width, height } = this.ctx.canvas;
+        const size = 20
+        this.numberDisplay.drawScore(score, width*0.75 / 2  - 140, 40, size);
+        // this.numberDisplay.drawScore(highScore, 30, 110, size);
     }
 
     /**
@@ -115,7 +129,7 @@ export class Renderer {
      */
     drawGrid(gridManager, mainZone) {
         const centerX = mainZone.width / 2;
-        const centerY = mainZone.height / 2;
+        const centerY = mainZone.height / 2 + CONFIG.DELTA_Y;
 
         gridManager.gridState.forEach((value, key) => {
             const [q, r] = key.split(',').map(Number);
@@ -157,7 +171,7 @@ export class Renderer {
      */
     drawPlacementPreview(hexCoord, shape, mainZone) {
         const centerX = mainZone.width / 2;
-        const centerY = mainZone.height / 2;
+        const centerY = mainZone.height / 2 + CONFIG.DELTA_Y;
 
         shape.coords.forEach(([dq, dr]) => {
             const q = hexCoord.q + dq;
@@ -169,27 +183,6 @@ export class Renderer {
         });
     }
     
-    /**
-     * 繪製分數
-     * @param {number} score 
-     * @param {number} highScore 
-     */
-    drawScore(score, highScore) {
-        this.ctx.save();
-        this.ctx.fillStyle = "#d6d6d6ff";
-        this.ctx.font = "bold 24px Arial";
-        this.ctx.textAlign = "left";
-        
-        // 繪製目前分數
-        this.ctx.fillText(`SCORE: ${score}`, 30, 50);
-        
-        // 繪製最高分
-        this.ctx.font = "16px Arial";
-        this.ctx.fillStyle = "#898888ff";
-        this.ctx.fillText(`BEST: ${highScore}`, 30, 80);
-        
-        this.ctx.restore();
-    }
 
     renderFX(fxManager) {
         fxManager.particles.forEach(p => {
