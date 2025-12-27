@@ -18,7 +18,7 @@ const fxManager = new FXManager();
 audio.loadSounds({
     pick: 'assets/pick.wav',
     place: 'assets/place.wav',
-    clear: 'assets/clear.wav',
+    clear: 'assets/clear.mp3',
     // error: 'assets/error.wav'
 });
 
@@ -179,7 +179,7 @@ canvas.addEventListener('mouseup', () => {
             state.score += clearScore;
             audio.play('clear');
             fxManager.createFloatingText(state.dragTarget.x, state.dragTarget.y, `+${clearScore}`, state.dragTarget.color);
-            fxManager.triggerShake(5, 15);
+            fxManager.triggerShake(linesCleared * 5, 15);
             if (linesCleared >= 3) Theme.nextTheme();
         }
 
