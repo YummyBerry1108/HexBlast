@@ -31,4 +31,15 @@ export class AudioManager {
     toggle(state) {
         this.enabled = state !== undefined ? state : !this.enabled;
     }
+
+    playBGM(name) {
+        if (!this.enabled || !this.sounds[name]) return;
+        if (this.bgm) {
+            this.bgm.pause();
+        }
+        this.bgm = this.sounds[name];
+        this.bgm.loop = true;
+        this.bgm.volume = 0.3;
+        this.bgm.play().catch(e => console.warn("BGM play blocked by browser."));
+    }
 }

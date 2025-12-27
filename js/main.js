@@ -12,14 +12,15 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const renderer = new Renderer(ctx);
 const grid = new GridManager(CONFIG.DEFAULT_RADIUS);
-const audio = new AudioManager();
+const audioManager = new AudioManager();
 const fxManager = new FXManager();
 const blockGenerator = new BlockGenerator();
 
-audio.loadSounds({
+audioManager.loadSounds({
     pick: 'assets/pick.wav',
     place: 'assets/place.wav',
     clear: 'assets/clear.mp3',
+    bgm: 'assets/backgroundMusic.mp3',
     // error: 'assets/error.wav'
 });
 
@@ -53,6 +54,7 @@ const state = {
 // Main Functions
 function newGame(newRadius) {
     if (gameState === CONFIG.GAME_STATE.GAME) return;
+    audioManager.playBGM('bgm');
     gameState = CONFIG.GAME_STATE.GAME;
     gameFinished = false;
     state.combo.count = 0;
@@ -61,7 +63,6 @@ function newGame(newRadius) {
     grid.init(newRadius);
     embedBlockSlot();
 }
-
 
 function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -80,8 +81,6 @@ function embedBlockSlot() {
         });
     }
 }
-
-
 
 function updateZones() {
     canvas.width = window.innerWidth;
@@ -124,8 +123,6 @@ function updateZones() {
     CONFIG.DEFAULT_HEX_SIZE = minDimension / ((grid.radius * 2 + 1) * 1.732);
 }
 
-
-
 function checkGameOver() {
     for (const slot of state.selectionSlots) {
         if (slot.shape && grid.canPlaceAny(slot.shape)) {
@@ -161,7 +158,11 @@ function getPointerPos(e) {
 // Event Listeners
 const handleStart = (e) => {
     if (e.type === 'touchstart') e.preventDefault(); // 防止手機預設行為
-    audio.play('pick');
+    audioManager.play('pick');
+    if (gameState === CONFIG.GAME_STATE.OVER){
+        gameState = CONFIG.GAME_STATE.MENU;
+        return;
+    }
     newGame(CONFIG.DEFAULT_RADIUS);
     const pos = getPointerPos(e);
 
@@ -182,7 +183,7 @@ const handleMove = (e) => {
     const pos = getPointerPos(e);
     if (state.isDragging && state.dragTarget) {
         // 優化：如果是觸控，將方塊往上移 50px，避免手指遮擋
-        const touchOffsetY = pos.isTouch ? 50 : 0; 
+        const touchOffsetY = pos.isTouch ? 30 : 0; 
         
         state.dragTarget.x = pos.x - state.dragOffset.x;
         state.dragTarget.y = pos.y - state.dragOffset.y - touchOffsetY;
@@ -209,7 +210,7 @@ const handleEnd = (e) => {
         state.score += placementScore;
 
         grid.place(hex, state.dragTarget.shape, state.dragTarget.color);
-        audio.play('place');
+        audioManager.play('place');
         fxManager.createDust(pos.x, pos.y);
         fxManager.createPulse(pos.x, pos.y);
 
@@ -237,7 +238,7 @@ const handleEnd = (e) => {
             state.score += clearScore;
             state.combo.count += 1;
             state.combo.timer = state.combo.maxTime; // 重置連擊計時器
-            audio.play('clear');
+            audioManager.play('clear');
             fxManager.createFloatingText(state.dragTarget.x, state.dragTarget.y, `+${clearScore}`, state.dragTarget.color, 50);
             fxManager.createFloatingText(state.dragTarget.x, state.dragTarget.y + 30, `COMBO x${state.combo.count}`, state.dragTarget.color, 30);
             fxManager.triggerShake(linesCleared * 5, 15);
@@ -266,6 +267,10 @@ const handleEnd = (e) => {
 }
 
 window.addEventListener('keydown', (e) => {
+    if (gameState === CONFIG.GAME_STATE.OVER){
+        gameState = CONFIG.GAME_STATE.MENU;
+        return;
+    }
     let newRadius = CONFIG.DEFAULT_RADIUS;
     if ('1' < e.key && e.key <= '5' && gameState !== CONFIG.GAME_STATE.GAME){
         newRadius = parseInt(e.key);
@@ -311,7 +316,7 @@ function gameLogic() {
     }
     
     if (grid.updateDissolve()) {
-        audio.play('place');
+        audioManager.play('place');
         Theme.nextTheme();
     }
 

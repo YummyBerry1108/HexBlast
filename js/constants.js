@@ -16,8 +16,6 @@ export const CONFIG = {
     // Score Display Settings
     SCORE_SPACE: 1.8,
     MAX_DIGITS: 8,
-    FOREGROUND_COLOR: '#d00000',
-    BACKGROUND_COLOR: '#430000'
 };
 
 export const SHAPES = [
