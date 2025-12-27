@@ -19,7 +19,7 @@ export class Renderer {
     }
 
     /**
-     * 繪製菜單
+     * 繪製選單
      */
     drawMenu() {
         const { width, height } = this.ctx.canvas;
@@ -31,9 +31,9 @@ export class Renderer {
         this.ctx.font = "bold 24px Arial";
         this.ctx.textAlign = "center";
         
-        // 繪製目前分數
         this.ctx.fillText(`START GAME`, width / 2, height / 2);
         this.ctx.fillText(`PRESS ANY KEY`, width / 2, height / 2 + 40);
+        this.ctx.restore();
     }
 
     /**

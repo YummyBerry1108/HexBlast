@@ -6,7 +6,7 @@ import { Renderer } from './Renderer.js';
 import { AudioManager } from './AudioManager.js';
 import { FXManager } from './FXManager.js';
 import { Theme } from './Theme.js';
-
+import { BlockGenerator } from './BlockGenerator.js';
 // Init
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -14,6 +14,7 @@ const renderer = new Renderer(ctx);
 const grid = new GridManager(CONFIG.DEFAULT_RADIUS);
 const audio = new AudioManager();
 const fxManager = new FXManager();
+const blockGenerator = new BlockGenerator();
 
 audio.loadSounds({
     pick: 'assets/pick.wav',
@@ -58,7 +59,7 @@ function newGame(newRadius) {
     state.combo.timer = 0;
     state.score = 0;
     grid.init(newRadius);
-    spawnShapes();
+    embedBlockSlot();
 }
 
 
@@ -66,10 +67,10 @@ function getRandomItem(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function spawnShapes() {
+function embedBlockSlot() {
     const allEmpty = state.selectionSlots.every(s => s.shape === null);
     if (allEmpty) {
-        const SAFE_SHAPES = spawnSafeShapes()
+        const SAFE_SHAPES = blockGenerator.spawnShapes(grid);
         state.selectionSlots.forEach((slot, index) => {
             slot.shape = SAFE_SHAPES[index];
             slot.color = getRandomItem(CONFIG.COLORS);
@@ -80,45 +81,7 @@ function spawnShapes() {
     }
 }
 
-/**
- * 加權隨機選取
- * @param {Array} items - 帶有 weight 屬性的物件陣列
- */
-function getWeightedRandom(items) {
 
-    const shuffledItems = items.slice().sort(() => Math.random() - 0.5); // 打亂順序以避免偏差
-    let random = Math.random() * 100;
-    let difficulty = 0;
-    if (random < 2) difficulty = 1;
-    if (random < 40 && difficulty === 0) difficulty = 2;
-    if (random < 70 && difficulty === 0) difficulty = 3;
-    if (random < 90 && difficulty === 0) difficulty = 4;
-    if (difficulty === 0) difficulty = 5;
-
-    for (const item of shuffledItems) {
-        if (item.difficulty == difficulty) return item;
-    }
-    return shuffledItems[0];
-}
-
-function spawnSafeShapes() {
-    let attempts = 0;
-    while (attempts < 100) { // 防止無窮迴圈
-        console.log('嘗試次數:', attempts + 1);
-        const testShapes = [getWeightedRandom(SHAPES), getWeightedRandom(SHAPES), getWeightedRandom(SHAPES)];
-        
-        // 取得目前真實網格的副本
-        const initialMap = grid.cloneGridState(grid.gridState);
-        const hasClear = false;
-        // 只要有一種順序能通即可 (或是為了嚴謹，測試所有排列組合)
-        if (solve(initialMap, testShapes, hasClear)) {
-            return testShapes; // 找到可行組合
-        }
-        attempts++;
-    }
-    // 若極難找到，回傳三個「單點」方塊作為保底
-    return [SHAPES[0], SHAPES[0], SHAPES[0]]; 
-}
 
 function updateZones() {
     canvas.width = window.innerWidth;
@@ -161,43 +124,7 @@ function updateZones() {
     CONFIG.DEFAULT_HEX_SIZE = minDimension / ((grid.radius * 2 + 1) * 1.732);
 }
 
-/**
- * @param {Map} currentState - 當前的模擬網格
- * @param {Array} remainingShapes - 剩餘未放置的方塊
- */
-function solve(currentState, remainingShapes, hasClear) {
-    // 基本情況：所有方塊都成功放下
-    let notoccupiedCount = 0;
-    let totalCount = CONFIG.DEFAULT_RADIUS * CONFIG.DEFAULT_RADIUS * 3 + CONFIG.DEFAULT_RADIUS * 3 + 1;
-    for (let [key, cell] of currentState) {
-        if (!cell.occupied) notoccupiedCount++;
-    }
-    console.log('目前空格數:', notoccupiedCount, '總格數:', totalCount);
-    if (remainingShapes.length === 0){
-        console.log('所有方塊已放置完畢');
-        console.log('是否有消除:', hasClear);
-        if (hasClear || notoccupiedCount / totalCount > CONFIG.NEED_CLEAR_RATIO) return true;
-        else return false;
-    } 
 
-    const currentShape = remainingShapes[0];
-    const nextShapes = remainingShapes.slice(1);
-
-    for (let [key] of currentState) {
-        const [q, r] = key.split(',').map(Number);
-        const hex = { q, r };
-
-        let newState = grid.testPlace(currentState, hex, currentShape);
-        
-        if (newState) {
-            let {tempState, hasCleared} = grid.testClear(newState);
-            newState = tempState;
-            if (solve(newState, nextShapes, hasCleared || hasClear)) return true;
-        }
-    }
-
-    return false;
-}
 
 function checkGameOver() {
     for (const slot of state.selectionSlots) {
@@ -324,7 +251,7 @@ const handleEnd = (e) => {
         }
 
         state.dragTarget.shape = null;
-        spawnShapes();
+        embedBlockSlot();
     } 
     else {
         state.dragTarget.x = state.dragTarget.originalPos.x;
@@ -433,7 +360,13 @@ function endScene() {
 let gameState = CONFIG.GAME_STATE.MENU;
 let gameFinished = false;
 
+let lastTimestamp = 0;
+let deltaTime = 0;
+
 function gameLoop(timestamp) {
+    deltaTime = timestamp - lastTimestamp;
+    lastTimestamp = timestamp;
+    CONFIG.FPS = 1 / deltaTime * 1000;
     if (gameState === CONFIG.GAME_STATE.GAME) {
         gameScene();
     } 
@@ -448,5 +381,5 @@ function gameLoop(timestamp) {
 
 // Start the Game
 updateZones();
-spawnShapes();
+embedBlockSlot();
 gameLoop();
