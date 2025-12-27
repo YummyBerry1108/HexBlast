@@ -10,7 +10,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Emoji:wght@300..700&family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="menu-overlay" class="overlay">
+            <h1 id="menu-title" class="neon-text">HEX BLAST</h1>
+            
+            <div id="game-over-stats" style="display: none;">
+                <p class="stat-label">FINAL SCORE</p>
+                <p id="final-score" class="stat-value">0</p>
+                <p class="stat-value">BEST: <span id="high-score", class="stat-value">0</span></p>
+            </div>
+            
+            <button id="start-btn" class="neon-button">START GAME</button>
+        </div>
+    </div>
     <script type="module" src="js/main.js"></script>
 </body>
 </html>

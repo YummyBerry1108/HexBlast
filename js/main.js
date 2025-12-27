@@ -61,6 +61,7 @@ function newGame(newRadius) {
     state.combo.timer = 0;
     state.score = 0;
     grid.init(newRadius);
+    updateZones()
     embedBlockSlot();
 }
 
@@ -120,7 +121,8 @@ function updateZones() {
     const minDimension = Math.min(state.zones.main.width, state.zones.main.height) - padding;
     // 六邊形網格總寬度約為 (radius * 2 + 1) * hex_width
     // hex_width = hex_size * sqrt(3)
-    CONFIG.DEFAULT_HEX_SIZE = minDimension / ((grid.radius * 2 + 1) * 1.732);
+    CONFIG.DEFAULT_HEX_SIZE = Math.min(minDimension / ((grid.radius * 2 + 1) * 1.732), 50);
+    console.log('DEFAULT_HEX_SIZE:', CONFIG.DEFAULT_HEX_SIZE);
 }
 
 function checkGameOver() {
@@ -290,6 +292,72 @@ canvas.addEventListener('touchstart', handleStart, { passive: false });
 canvas.addEventListener('touchmove', handleMove, { passive: false });
 canvas.addEventListener('touchend', handleEnd);
 
+// Menu
+
+const menuOverlay = document.getElementById('menu-overlay');
+const startBtn = document.getElementById('start-btn');
+
+startBtn.addEventListener('click', () => {
+    if (gameState === CONFIG.GAME_STATE.OVER) {
+        gameState = CONFIG.GAME_STATE.MENU;
+        document.getElementById('menu-title').innerText = "HEX BLAST";
+        document.getElementById('start-btn').innerText = "START GAME";
+        document.getElementById('game-over-stats').style.display = "none";
+        return;
+    }
+    menuOverlay.style.opacity = '0';
+    setTimeout(() => {
+        menuOverlay.style.display = 'none';
+        state.isGameOver = false;
+    }, 500);
+});
+
+function triggerGameOver() {
+    state.isGameOver = true;
+    
+    // 1. 更新 UI 文字
+    document.getElementById('menu-title').innerText = "GAME OVER";
+    document.getElementById('start-btn').innerText = "RETRY";
+    document.getElementById('game-over-stats').style.display = "contents";
+    document.getElementById('high-score').innerText = state.highScore;
+    
+    // 2. 顯示 Overlay
+    const overlay = document.getElementById('menu-overlay');
+    overlay.style.display = "flex";
+    setTimeout(() => overlay.style.opacity = "1", 10);
+
+    // 3. 分數跑值動畫
+    animateScore(state.score);
+
+    // 4. 更新最高紀錄
+    if (state.score > state.highScore) {
+        state.highScore = state.score;
+        localStorage.setItem('hexblast_highscore', state.highScore);
+    }
+}
+
+function animateScore(targetScore) {
+    const scoreElement = document.getElementById('final-score');
+    let currentDisplay = 0;
+    const duration = 1500; // 跑 1.5 秒
+    const startTime = performance.now();
+
+    function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        // 使用 Ease Out 效果讓結尾慢下來
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentDisplay = Math.floor(easeOut * targetScore);
+        
+        scoreElement.innerText = currentDisplay.toLocaleString();
+
+        if (progress < 1) {
+            requestAnimationFrame(update);
+        }
+    }
+    requestAnimationFrame(update);
+}
 // Main Game Loop
 
 function gameLogic() {
@@ -312,6 +380,7 @@ function gameLogic() {
 
     if (gameFinished && fxManager.particles.length === 0) {
         gameState = CONFIG.GAME_STATE.OVER;
+        triggerGameOver();
         return;
     }
     
@@ -358,8 +427,8 @@ function menuScene() {
 }
 
 function endScene() {
-    renderer.clear();
-    renderer.drawEndScreen(state.endScore, state.highScore);
+    // renderer.clear();
+    // renderer.drawEndScreen(state.endScore, state.highScore);
 }
 
 let gameState = CONFIG.GAME_STATE.MENU;
@@ -385,6 +454,10 @@ function gameLoop(timestamp) {
 }
 
 // Start the Game
-updateZones();
-embedBlockSlot();
-gameLoop();
+function startGameLoop() {
+    updateZones();
+    embedBlockSlot();
+    gameLoop();
+}
+
+startGameLoop();

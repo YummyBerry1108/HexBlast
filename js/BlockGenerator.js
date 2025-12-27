@@ -37,7 +37,7 @@ export class BlockGenerator {
             }
             attempts++;
         }
-        // 若極難找到，回傳三個「單點」方塊作為保底
+        // Not Found
         return [SHAPES[0], SHAPES[0], SHAPES[0]]; 
     }
 
@@ -46,17 +46,16 @@ export class BlockGenerator {
      * @param {Array} remainingShapes - 剩餘未放置的方塊
      */
     solve(currentState, remainingShapes, hasClear, grid) {
-        // 基本情況：所有方塊都成功放下
-        let notoccupiedCount = 0;
+        let notOccupiedCount = 0;
         let totalCount = CONFIG.DEFAULT_RADIUS * CONFIG.DEFAULT_RADIUS * 3 + CONFIG.DEFAULT_RADIUS * 3 + 1;
         for (let [key, cell] of currentState) {
-            if (!cell.occupied) notoccupiedCount++;
+            if (!cell.occupied) notOccupiedCount++;
         }
-        console.log('目前空格數:', notoccupiedCount, '總格數:', totalCount);
+        console.log('目前空格數:', notOccupiedCount, '總格數:', totalCount);
         if (remainingShapes.length === 0){
             console.log('所有方塊已放置完畢');
             console.log('是否有消除:', hasClear);
-            if (hasClear || notoccupiedCount / totalCount > CONFIG.NEED_CLEAR_RATIO) return true;
+            if (hasClear || notOccupiedCount / totalCount > CONFIG.NEED_CLEAR_RATIO) return true;
             else return false;
         } 
 
