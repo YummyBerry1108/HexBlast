@@ -92,6 +92,8 @@ function checkGameOver() {
 // Event Listeners
 canvas.addEventListener('mousedown', (e) => {
     gameState = CONFIG.GAME_STATE.GAME;
+    gameFinished = false;
+
     const rect = canvas.getBoundingClientRect();
     state.mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
 
@@ -144,7 +146,7 @@ canvas.addEventListener('mouseup', () => {
         const clearInfo = grid.checkAndClearLines();
         const uniqueCoords = clearInfo.grid;
         const linesCleared = clearInfo.linesCleared;
-
+        let prelife = 0.1;
         uniqueCoords.forEach(key => {
 
             const pixelPos = hexToPixel(
@@ -157,8 +159,11 @@ canvas.addEventListener('mouseup', () => {
             fxManager.createExplosion(
                 pixelPos.x,
                 pixelPos.y,
-                key.color
+                key.color,
+                0.5,
+                prelife
             );
+            prelife += 0.05;
         });
 
         if (linesCleared > 0) {
@@ -172,10 +177,10 @@ canvas.addEventListener('mouseup', () => {
             state.highScore = state.score;
             localStorage.setItem('hex-high-score', state.highScore);
         }
-
         state.dragTarget.shape = null;
         spawnShapes();
-    } else {
+    } 
+    else {
         // 彈回原位
         state.dragTarget.x = state.dragTarget.originalPos.x;
         state.dragTarget.y = state.dragTarget.originalPos.y;
@@ -190,6 +195,7 @@ canvas.addEventListener('mouseup', () => {
 
 window.addEventListener('keydown', (e) => {
     gameState = CONFIG.GAME_STATE.GAME;
+    gameFinished = false;
 });
 
 window.addEventListener('resize', updateZones);
@@ -197,20 +203,39 @@ window.addEventListener('resize', updateZones);
 // Main Game Loop
 
 function gameScene() {
-    if(checkGameOver()){
-        gameState = CONFIG.GAME_STATE.OVER;
+    if(checkGameOver() && !gameFinished){
+        gameFinished = true;
         state.endScore = state.score;
         state.score = 0;
-        grid.init();
-        spawnShapes();
-        return;
+        
+        const tasks = grid.startDissolve();
+
+        tasks.forEach(task => {
+            const centerX = state.zones.main.width / 2;
+            const centerY = state.zones.main.height / 2;
+            const pixelPos = hexToPixel(task.q, task.r, centerX, centerY);
+
+            fxManager.createExplosion(pixelPos.x, pixelPos.y, task.color, 1.0, task.delay);
+        });
+
+        state.selectionSlots.forEach(slot => slot.shape = null);
     } 
+
+    if (gameFinished && fxManager.particles.length === 0) {
+        gameState = CONFIG.GAME_STATE.OVER;
+        return;
+    }
+    
+    if (grid.updateDissolve()) audio.play('place');
+    
+
+
     fxManager.update();
     renderer.clear();
 
     renderer.drawZonesBackground(state.zones);
     renderer.drawGrid(grid, state.zones.main);
-    renderer.drawScore(state.endScore, state.highScore);
+    renderer.drawScore(state.score, state.highScore);
 
     if (state.previewHex && state.dragTarget) {
         renderer.drawPlacementPreview(state.previewHex, state.dragTarget.shape, state.zones.main);
@@ -228,12 +253,15 @@ function menuScene() {
 
 function endScene() {
     renderer.clear();
-    renderer.drawEndScreen(state.score, state.highScore);
+    renderer.drawEndScreen(state.endScore, state.highScore);
+    grid.init();
+    spawnShapes();
 }
 
 let gameState = CONFIG.GAME_STATE.MENU;
+let gameFinished = false;
 
-function gameLoop() {
+function gameLoop(timestamp) {
     if (gameState === CONFIG.GAME_STATE.GAME) {
         gameScene();
     } 

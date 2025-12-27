@@ -6,3 +6,8 @@ body, html {
     height: 100%;
     background-color: #2c2b2b;
 }
+canvas {
+    touch-action: none; /* 禁用瀏覽器的手勢處理（如捲動、縮放），由 JS 完全接管 */
+    user-select: none;  /* 防止長按選取文字 */
+    -webkit-tap-highlight-color: rgba(0,0,0,0); /* 移除行動裝置點擊時的藍色高亮 */
+}

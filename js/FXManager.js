@@ -1,3 +1,5 @@
+import { CONFIG } from './constants.js';
+
 export class FXManager {
     constructor() {
         this.particles = [];
@@ -8,13 +10,14 @@ export class FXManager {
     /**
      * 在特定位置產生爆炸粒子
      */
-    createExplosion(x, y, color) {
-        for (let i = 0; i < 8; i++) {
+    createExplosion(x, y, color, life = 1.0, prelife = 0, particleCount = 8) {
+        for (let i = 0; i < particleCount; i++) {
             this.particles.push({
                 x, y,
                 vx: (Math.random() - 0.5) * 10,
                 vy: (Math.random() - 0.5) * 10,
-                life: 1.0, 
+                life: life,
+                prelife: prelife,
                 color: color,
                 size: Math.random() * 5 + 5
             });
@@ -33,9 +36,13 @@ export class FXManager {
         // 更新粒子
         for (let i = this.particles.length - 1; i >= 0; i--) {
             const p = this.particles[i];
+            if (p.prelife > 0) {
+                p.prelife -= 1/CONFIG.FPS;
+                continue;
+            }
             p.x += p.vx;
             p.y += p.vy;
-            p.life -= 0.05;
+            p.life -= 1/CONFIG.FPS;
             if (p.life <= 0) this.particles.splice(i, 1);
         }
 

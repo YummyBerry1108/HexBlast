@@ -1,4 +1,5 @@
 export const CONFIG = {
+    FPS: 60,
     HEX_SIZE: 35,
     RADIUS: 5,
     COLORS: ['#FF5733', '#33FF57', '#3357FF', '#F1C40F', '#9B59B6'],
@@ -17,4 +18,6 @@ export const SHAPES = [
     { name: 'Small-Triangle', coords: [[0,0], [0,-1], [-1,0]] },
     { name: 'Small-Triangle-Reversed', coords: [[0,0], [-1,1], [-1,0]] },
     { name: 'Hex', coords: [[0,0], [-1,1], [-1,0], [0,-1], [1,0], [1,-1], [0,1]] },
+    { name: 'Hourglass', coords: [[0,0], [-1,1], [0,-1], [1,-1], [0,1]] },
+    { name: 'Fan', coords: [[0,0], [-1,1], [0,-1], [1,0]] },
 ];

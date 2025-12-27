@@ -22,8 +22,7 @@ export class AudioManager {
      */
     play(name) {
         if (!this.enabled || !this.sounds[name]) return;
-        
-        // 複製一份以支援連續快速播放
+
         const sound = this.sounds[name].cloneNode();
         sound.volume = 0.5;
         sound.play().catch(e => console.warn("Audio play blocked by browser."));

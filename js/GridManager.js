@@ -1,3 +1,5 @@
+import { CONFIG } from "./constants.js";
+
 export class GridManager {
     constructor(radius) {
         this.radius = radius;
@@ -75,7 +77,7 @@ export class GridManager {
             }
         }
 
-        // 3. 檢查 s 軸 (右斜線 /): 特徵是 q + r = k
+        // 3. 檢查 s 軸 (右斜線 /)
         for (let k = -this.radius; k <= this.radius; k++) {
             let line = [];
             for (let q = -this.radius; q <= this.radius; q++) {
@@ -106,6 +108,48 @@ export class GridManager {
     isLineFull(lineKeys) {
         if (lineKeys.length === 0) return false;
         return lineKeys.every(key => this.gridState.get(key).occupied);
+    }
+    /**
+     * 遊戲結束時啟動格子溶解效果
+     * @param {int} delayPerCell - 每個格子溶解的延遲時間
+     * @returns {task} array of dissolve tasks, containing q, r, color, delay
+     */
+    startDissolve(delayPerCell = 0.1) {
+        const dissolveTasks = [];
+        let delay = 0;
+        this.gridState.forEach((cell, key) => {
+            if (cell.occupied) {
+
+                cell.isDissolving = true;
+                cell.clearTime = delay;
+
+                dissolveTasks.push({
+                    q: parseInt(key.split(',')[0]),
+                    r: parseInt(key.split(',')[1]),
+                    color: cell.color,
+                    delay: delay
+                });
+
+                delay += delayPerCell; // 溶解間隔
+            }
+        });
+        return dissolveTasks;
+    }
+
+    updateDissolve() {
+        const dtSeconds = 1 / CONFIG.FPS;
+        let playSound = false;
+        this.gridState.forEach((cell, key) => {
+            if (cell.isDissolving) {
+                cell.clearTime -= dtSeconds;
+                if (cell.clearTime <= 0) {
+                    cell.occupied = false;
+                    cell.isDissolving = false;
+                    playSound = true;
+                }
+            }
+        });
+        return playSound;
     }
 
 }

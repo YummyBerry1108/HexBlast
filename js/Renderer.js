@@ -193,6 +193,7 @@ export class Renderer {
 
     renderFX(fxManager) {
         fxManager.particles.forEach(p => {
+            if (p.prelife > 0) return;
             this.ctx.globalAlpha = p.life;
             this.ctx.fillStyle = p.color;
             this.ctx.fillRect(p.x, p.y, p.size, p.size);

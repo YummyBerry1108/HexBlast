@@ -4,7 +4,6 @@ export function hexRound(fracQ, fracR) {
     let q = Math.round(fracQ);
     let r = Math.round(fracR);
     let s = Math.round(-fracQ - fracR);
-    // ... 原有的 hexRound 邏輯
     return { q, r };
 }
 
