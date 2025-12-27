@@ -42,14 +42,21 @@ export class Renderer {
      * @param {number} highScore - 最高分
      * @param {Object} comboState - combo狀態
      */
-    drawDisplayScore(score, highScore, comboState) {
+    drawDisplayScore(score, highScore, comboState, zones) {
         const { width, height } = this.ctx.canvas;
         const size = 20
-        const x = width * 0.75 /2 - 140;
-        const y = 25;
-        const totalWidth = size * 9 + 50;
-
-        this.numberDisplay.drawScore(score, width*0.75 / 2  - 140, y, size);
+        let x;
+        let y;
+        const totalWidth = size * 9 + 100;
+        const isPortrait = height > width;
+        if (isPortrait) {
+            x = width / 2 - (20 * 9 * 1.6) / 2; // 簡單置中計算
+            y = 40;
+        } else {
+            x = zones.main.width / 2 - totalWidth / 2;
+            y = 30;
+        }
+        this.numberDisplay.drawScore(score, x, y, size);
 
         if (comboState.count > 0) {
             const progress = comboState.timer / comboState.maxTime;
@@ -63,7 +70,6 @@ export class Renderer {
                 Theme.get('displayActive')
             );
 
-            // 3. (選擇性) 顯示 Combo 字樣
             this.ctx.save();
             this.ctx.textAlign = "left";
             this.ctx.fillStyle = Theme.get('displayActive');
@@ -159,11 +165,11 @@ export class Renderer {
 
         gridManager.gridState.forEach((value, key) => {
             const [q, r] = key.split(',').map(Number);
-            const screenX = CONFIG.HEX_SIZE * Math.sqrt(3) * (q + r / 2) + centerX;
-            const screenY = CONFIG.HEX_SIZE * 3 / 2 * r + centerY;
+            const screenX = CONFIG.DEFAULT_HEX_SIZE * Math.sqrt(3) * (q + r / 2) + centerX;
+            const screenY = CONFIG.DEFAULT_HEX_SIZE * 3 / 2 * r + centerY;
 
             const color = value.occupied ? value.color : "#E0E0E0";
-            this.drawHexagon(screenX, screenY, CONFIG.HEX_SIZE - 2, color);
+            this.drawHexagon(screenX, screenY, CONFIG.DEFAULT_HEX_SIZE - 2, color);
         });
     }
 
@@ -176,13 +182,13 @@ export class Renderer {
             if (!slot.shape) return;
 
             slot.shape.coords.forEach(([dq, dr]) => {
-                const offsetX = (dq + dr / 2) * Math.sqrt(3) * CONFIG.HEX_SIZE * slot.scale;
-                const offsetY = dr * 3 / 2 * CONFIG.HEX_SIZE * slot.scale;
+                const offsetX = (dq + dr / 2) * Math.sqrt(3) * CONFIG.DEFAULT_HEX_SIZE * slot.scale;
+                const offsetY = dr * 3 / 2 * CONFIG.DEFAULT_HEX_SIZE * slot.scale;
                 
                 this.drawHexagon(
                     slot.x + offsetX,
                     slot.y + offsetY,
-                    (CONFIG.HEX_SIZE * slot.scale) - 2,
+                    (CONFIG.DEFAULT_HEX_SIZE * slot.scale) - 2,
                     slot.color
                 );
             });
@@ -202,10 +208,10 @@ export class Renderer {
         shape.coords.forEach(([dq, dr]) => {
             const q = hexCoord.q + dq;
             const r = hexCoord.r + dr;
-            const screenX = CONFIG.HEX_SIZE * Math.sqrt(3) * (q + r / 2) + centerX;
-            const screenY = CONFIG.HEX_SIZE * 3 / 2 * r + centerY;
+            const screenX = CONFIG.DEFAULT_HEX_SIZE * Math.sqrt(3) * (q + r / 2) + centerX;
+            const screenY = CONFIG.DEFAULT_HEX_SIZE * 3 / 2 * r + centerY;
 
-            this.drawHexagon(screenX, screenY, CONFIG.HEX_SIZE - 2, "#000", 0.1);
+            this.drawHexagon(screenX, screenY, CONFIG.DEFAULT_HEX_SIZE - 2, "#000", 0.1);
         });
     }
     

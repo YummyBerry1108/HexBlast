@@ -26,7 +26,6 @@ export class GridManager {
             const r = center.r + relCoord[1];
             const cell = this.gridState.get(`${q},${r}`);
 
-            // 若超出邊界或已被佔據，則不能放置
             if (!cell || cell.occupied) return false;
         }
         return true;
@@ -94,7 +93,7 @@ export class GridManager {
             }
         }
 
-        // 執行消除 (使用 Set 避免重複消除交叉點的格子)
+        // 執行消除
         const uniqueCoords = [...new Set(linesToClear)];
         uniqueCoords.forEach(key => {
             clearedInfo.grid.push({

@@ -1,6 +1,6 @@
 export const CONFIG = {
     FPS: 60,
-    HEX_SIZE: 35,
+    DEFAULT_HEX_SIZE: 35,
     DEFAULT_RADIUS: 5,
     COLORS: ['#FF5733', '#33FF57', '#3357FF', '#F1C40F', '#9B59B6'],
     SCORE: {

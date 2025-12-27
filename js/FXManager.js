@@ -42,7 +42,7 @@ export class FXManager {
             color: color,
             size: size,
             vx: 0,
-            vy: -2,    // 向上飄
+            vy: -2,
             alpha: 1,
             life: 1.0
         });

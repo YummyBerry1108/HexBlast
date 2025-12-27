@@ -46,7 +46,7 @@ const state = {
     dragTarget: null, // slot
     dragOffset: { x: 0, y: 0 },
     mousePos: { x: 0, y: 0 },
-    previewHex: null // 用於顯示放置預覽
+    previewHex: null 
 };
 
 // Main Functions
@@ -79,20 +79,42 @@ function spawnShapes() {
 function updateZones() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    const isPortrait = canvas.height > canvas.width;
 
-    const sw = canvas.width * 0.25;
-    state.zones.sidebar = { x: canvas.width - sw, y: 0, width: sw, height: canvas.height };
-    state.zones.main = { x: 0, y: 0, width: canvas.width - sw, height: canvas.height };
+    if (isPortrait) {
+        const bh = canvas.height * 0.25; 
+        state.zones.main = { x: 0, y: 0, width: canvas.width, height: canvas.height - bh };
+        state.zones.sidebar = { x: 0, y: canvas.height - bh, width: canvas.width, height: bh };
 
-    state.selectionSlots.forEach((slot, i) => {
-        const targetX = state.zones.sidebar.x + state.zones.sidebar.width / 2;
-        const targetY = (state.zones.sidebar.height / 4) * (i + 1);
-        slot.originalPos = { x: targetX, y: targetY };
-        if (!slot.isDragging) {
-            slot.x = targetX;
-            slot.y = targetY;
-        }
-    });
+        state.selectionSlots.forEach((slot, i) => {
+            const targetX = (state.zones.sidebar.width / 4) * (i + 1);
+            const targetY = state.zones.sidebar.y + state.zones.sidebar.height / 2;
+            slot.originalPos = { x: targetX, y: targetY };
+            if (!slot.isDragging) {
+                slot.x = targetX;
+                slot.y = targetY;
+            }
+        });
+    } else {
+        const sw = canvas.width * 0.25;
+        state.zones.sidebar = { x: canvas.width - sw, y: 0, width: sw, height: canvas.height };
+        state.zones.main = { x: 0, y: 0, width: canvas.width - sw, height: canvas.height };
+
+        state.selectionSlots.forEach((slot, i) => {
+            const targetX = state.zones.sidebar.x + state.zones.sidebar.width / 2;
+            const targetY = (state.zones.sidebar.height / 4) * (i + 1);
+            slot.originalPos = { x: targetX, y: targetY };
+            if (!slot.isDragging) {
+                slot.x = targetX;
+                slot.y = targetY;
+            }
+        });
+    }
+    const padding = 80;
+    const minDimension = Math.min(state.zones.main.width, state.zones.main.height) - padding;
+    // 六邊形網格總寬度約為 (radius * 2 + 1) * hex_width
+    // hex_width = hex_size * sqrt(3)
+    CONFIG.DEFAULT_HEX_SIZE = minDimension / ((grid.radius * 2 + 1) * 1.732);
 }
 
 function checkGameOver() {
@@ -104,36 +126,47 @@ function checkGameOver() {
     return true;
 }
 
-// Event Listeners
-canvas.addEventListener('mousedown', (e) => {
-    newGame(CONFIG.DEFAULT_RADIUS);
-
+function getPointerPos(e) {
     const rect = canvas.getBoundingClientRect();
-    state.mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    return {
+        x: clientX - rect.left,
+        y: clientY - rect.top,
+        isTouch: !!e.touches
+    };
+}
+
+// Event Listeners
+const handleStart = (e) => {
+    if (e.type === 'touchstart') e.preventDefault(); // 防止手機預設行為
+    newGame(CONFIG.DEFAULT_RADIUS);
+    const pos = getPointerPos(e);
 
     state.selectionSlots.forEach(slot => {
         if (!slot.shape) return;
-        audio.play('pick');
-        const dist = Math.hypot(state.mousePos.x - slot.x, state.mousePos.y - slot.y);
-        if (dist < CONFIG.HEX_SIZE * 2) {
+        const dist = Math.hypot(pos.x - slot.x, pos.y - slot.y);
+        if (dist < CONFIG.DEFAULT_HEX_SIZE * 2.5) { 
             state.isDragging = true;
             state.dragTarget = slot;
             slot.isDragging = true;
-            state.dragOffset = { x: state.mousePos.x - slot.x, y: state.mousePos.y - slot.y };
+            state.dragOffset = { x: pos.x - slot.x, y: pos.y - slot.y };
             state.dragTarget.scale = 0.7;
         }
     });
-});
+}
 
-canvas.addEventListener('mousemove', (e) => {
-    const rect = canvas.getBoundingClientRect();
-    state.mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-
+const handleMove = (e) => {
+    const pos = getPointerPos(e);
     if (state.isDragging && state.dragTarget) {
-        state.dragTarget.x = state.mousePos.x - state.dragOffset.x;
-        state.dragTarget.y = state.mousePos.y - state.dragOffset.y;
+        // 優化：如果是觸控，將方塊往上移 50px，避免手指遮擋
+        const touchOffsetY = pos.isTouch ? 50 : 0; 
+        
+        state.dragTarget.x = pos.x - state.dragOffset.x;
+        state.dragTarget.y = pos.y - state.dragOffset.y - touchOffsetY;
 
-        // 處理縮放與預覽邏輯
         if (state.dragTarget.x < state.zones.main.width) {
             state.dragTarget.scale = Math.min(1.0, state.dragTarget.scale + 0.1);
             const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2 + CONFIG.DELTA_Y);
@@ -143,9 +176,9 @@ canvas.addEventListener('mousemove', (e) => {
             state.previewHex = null;
         }
     }
-});
+}
 
-canvas.addEventListener('mouseup', () => {
+const handleEnd = (e) => {
     if (!state.isDragging || !state.dragTarget) return;
 
     const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2 + CONFIG.DELTA_Y);
@@ -200,7 +233,6 @@ canvas.addEventListener('mouseup', () => {
         spawnShapes();
     } 
     else {
-        // 彈回原位
         state.dragTarget.x = state.dragTarget.originalPos.x;
         state.dragTarget.y = state.dragTarget.originalPos.y;
         state.dragTarget.scale = 0.8;
@@ -210,7 +242,7 @@ canvas.addEventListener('mouseup', () => {
     state.isDragging = false;
     state.dragTarget = null;
     state.previewHex = null;
-});
+}
 
 window.addEventListener('keydown', (e) => {
     let newRadius = CONFIG.DEFAULT_RADIUS;
@@ -222,6 +254,15 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('resize', updateZones);
+
+
+canvas.addEventListener('mousedown', handleStart);
+canvas.addEventListener('mousemove', handleMove);
+canvas.addEventListener('mouseup', handleEnd);
+
+canvas.addEventListener('touchstart', handleStart, { passive: false });
+canvas.addEventListener('touchmove', handleMove, { passive: false });
+canvas.addEventListener('touchend', handleEnd);
 
 // Main Game Loop
 
@@ -257,9 +298,8 @@ function gameLogic() {
     if (state.combo.timer > 0) {
         state.combo.timer -= 1 / CONFIG.FPS * 1000;
         if (state.combo.timer <= 0) {
-            // 連擊結束，重置
             state.combo.count = 0;
-            Theme.setTheme('lava'); // 切換回普通主題
+            Theme.setTheme('lava');
         }
     }
 
@@ -271,13 +311,12 @@ function gameRender() {
 
     renderer.drawZonesBackground(state.zones);
     renderer.drawGrid(grid, state.zones.main);
-    // renderer.drawScore(state.score, state.highScore);
 
     if (state.previewHex && state.dragTarget) {
         renderer.drawPlacementPreview(state.previewHex, state.dragTarget.shape, state.zones.main);
     }
 
-    renderer.drawDisplayScore(state.score, state.highScore, state.combo);
+    renderer.drawDisplayScore(state.score, state.highScore, state.combo, state.zones);
     renderer.drawSelectionSlots(state.selectionSlots);
     renderer.renderFX(fxManager);
     renderer.applyShake(fxManager);
