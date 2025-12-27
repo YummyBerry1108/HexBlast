@@ -130,7 +130,7 @@ function updateZones() {
         state.zones.sidebar = { x: 0, y: canvas.height - bh, width: canvas.width, height: bh };
 
         state.selectionSlots.forEach((slot, i) => {
-            const targetX = (state.zones.sidebar.width / 4) * (i + 1);
+            const targetX = (state.zones.sidebar.width / 4) * ((i + 1) + ((i+1)/2-1) * 0.5);
             const targetY = state.zones.sidebar.y + state.zones.sidebar.height / 2;
             slot.originalPos = { x: targetX, y: targetY };
             if (!slot.isDragging) {
@@ -208,13 +208,23 @@ function checkGameOver() {
 function getPointerPos(e) {
     const rect = canvas.getBoundingClientRect();
 
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    let clientX, clientY;
+
+    if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    } else if (e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+        clientY = e.changedTouches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
 
     return {
         x: clientX - rect.left,
         y: clientY - rect.top,
-        isTouch: !!e.touches
+        isTouch: !!(e.touches || e.changedTouches)
     };
 }
 
