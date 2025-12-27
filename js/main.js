@@ -142,6 +142,7 @@ function getPointerPos(e) {
 // Event Listeners
 const handleStart = (e) => {
     if (e.type === 'touchstart') e.preventDefault(); // 防止手機預設行為
+    audio.play('pick');
     newGame(CONFIG.DEFAULT_RADIUS);
     const pos = getPointerPos(e);
 
