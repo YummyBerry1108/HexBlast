@@ -69,14 +69,54 @@ function getRandomItem(arr) {
 function spawnShapes() {
     const allEmpty = state.selectionSlots.every(s => s.shape === null);
     if (allEmpty) {
-        state.selectionSlots.forEach(slot => {
-            slot.shape = getRandomItem(SHAPES);
+        const SAFE_SHAPES = spawnSafeShapes()
+        state.selectionSlots.forEach((slot, index) => {
+            slot.shape = SAFE_SHAPES[index];
             slot.color = getRandomItem(CONFIG.COLORS);
             slot.scale = 0.8;
             slot.x = slot.originalPos.x;
             slot.y = slot.originalPos.y;
         });
     }
+}
+
+/**
+ * 加權隨機選取
+ * @param {Array} items - 帶有 weight 屬性的物件陣列
+ */
+function getWeightedRandom(items) {
+
+    const shuffledItems = items.slice().sort(() => Math.random() - 0.5); // 打亂順序以避免偏差
+    let random = Math.random() * 100;
+    let difficulty = 0;
+    if (random < 2) difficulty = 1;
+    if (random < 40 && difficulty === 0) difficulty = 2;
+    if (random < 70 && difficulty === 0) difficulty = 3;
+    if (random < 90 && difficulty === 0) difficulty = 4;
+    if (difficulty === 0) difficulty = 5;
+
+    for (const item of shuffledItems) {
+        if (item.difficulty == difficulty) return item;
+    }
+    return shuffledItems[0];
+}
+
+function spawnSafeShapes() {
+    let attempts = 0;
+    while (attempts < 100) { // 防止無窮迴圈
+        const testShapes = [getWeightedRandom(SHAPES), getWeightedRandom(SHAPES), getWeightedRandom(SHAPES)];
+        
+        // 取得目前真實網格的副本
+        const initialMap = grid.cloneGridState(grid.gridState);
+        const hasClear = false;
+        // 只要有一種順序能通即可 (或是為了嚴謹，測試所有排列組合)
+        if (solve(initialMap, testShapes, hasClear)) {
+            return testShapes; // 找到可行組合
+        }
+        attempts++;
+    }
+    // 若極難找到，回傳三個「單點」方塊作為保底
+    return [SHAPES[0], SHAPES[0], SHAPES[0]]; 
 }
 
 function updateZones() {
@@ -118,6 +158,42 @@ function updateZones() {
     // 六邊形網格總寬度約為 (radius * 2 + 1) * hex_width
     // hex_width = hex_size * sqrt(3)
     CONFIG.DEFAULT_HEX_SIZE = minDimension / ((grid.radius * 2 + 1) * 1.732);
+}
+
+/**
+ * @param {Map} currentState - 當前的模擬網格
+ * @param {Array} remainingShapes - 剩餘未放置的方塊
+ */
+function solve(currentState, remainingShapes, hasClear) {
+    // 基本情況：所有方塊都成功放下
+    if (remainingShapes.length === 0){
+        if (hasClear) return true;
+        else return true;
+    } 
+    // return true;
+
+    const currentShape = remainingShapes[0];
+    const nextShapes = remainingShapes.slice(1);
+
+    // 遍歷網格中所有可能的起始位置
+    for (let [key] of currentState) {
+        const [q, r] = key.split(',').map(Number);
+        const hex = { q, r };
+
+        // 1. 嘗試放置
+        let newState = grid.testPlace(currentState, hex, currentShape);
+        
+        if (newState) {
+            // 2. 模擬消除
+            let {tempState, hasCleared} = grid.testClear(newState);
+            newState = tempState;
+            // 3. 遞迴嘗試下一塊
+            if (solve(newState, nextShapes, hasCleared)) return true;
+        }
+        // 回溯：if 失敗，迴圈會繼續嘗試下一個位置
+    }
+
+    return false;
 }
 
 function checkGameOver() {

@@ -155,4 +155,84 @@ export class GridManager {
         return playSound;
     }
 
+    // find valid placements for shapes
+
+    // 複製目前的網格狀態
+    cloneGridState(state) {
+        const newMap = new Map();
+        state.forEach((value, key) => {
+            newMap.set(key, { ...value });
+        });
+        return newMap;
+    }
+
+    // 純邏輯：嘗試放置方塊並回傳新的網格狀態（若無法放置則回傳 null）
+    testPlace(tempState, hex, shape) {
+        const newState = this.cloneGridState(tempState);
+        for (const coord of shape.coords) {
+            const q = hex.q + coord[0];
+            const r = hex.r + coord[1];
+            const key = `${q},${r}`;
+            const cell = newState.get(key);
+            if (!cell || cell.occupied) return null;
+            cell.occupied = true;
+        }
+        return newState;
+    }
+
+    // 純邏輯：模擬消除（回傳消除後的狀態）
+    testClear(tempState) {
+        let linesToClear = []; // 儲存所有需要消除的格子座標清單
+        let hasCleared = false;
+        // 1. 檢查 r 軸 (水平線)
+        for (let r = -this.radius; r <= this.radius; r++) {
+            let line = [];
+            for (let q = -this.radius; q <= this.radius; q++) {
+                if (tempState.has(`${q},${r}`)) line.push(`${q},${r}`);
+            }
+            if (this.isLineFull(line)) {
+                linesToClear.push(...line);
+                hasCleared = true;
+            }
+        }
+
+        // 2. 檢查 q 軸 (左斜線 \)
+        for (let q = -this.radius; q <= this.radius; q++) {
+            let line = [];
+            for (let r = -this.radius; r <= this.radius; r++) {
+                if (tempState.has(`${q},${r}`)) line.push(`${q},${r}`);
+            }
+            if (this.isLineFull(line)) {
+                linesToClear.push(...line);
+                hasCleared = true;
+            }
+        }
+
+        // 3. 檢查 s 軸 (右斜線 /)
+        for (let k = -this.radius; k <= this.radius; k++) {
+            let line = [];
+            for (let q = -this.radius; q <= this.radius; q++) {
+                let r = k - q; // 因為 q + r = k
+                if (tempState.has(`${q},${r}`)) line.push(`${q},${r}`);
+            }
+            if (this.isLineFull(line)) {
+                linesToClear.push(...line);
+                hasCleared = true;
+            }
+        }
+
+        // 執行消除
+        const uniqueCoords = [...new Set(linesToClear)];
+        uniqueCoords.forEach(key => {
+            clearedInfo.grid.push({
+                q: parseInt(key.split(',')[0]),
+                r: parseInt(key.split(',')[1]),
+                color: this.gridState.get(key).color
+            });
+            tempState.set(key, { occupied: false, color: null });
+        });
+
+        return {tempState, hasCleared};
+    }
+
 }
