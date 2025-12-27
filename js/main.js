@@ -54,6 +54,9 @@ function newGame(newRadius) {
     if (gameState === CONFIG.GAME_STATE.GAME) return;
     gameState = CONFIG.GAME_STATE.GAME;
     gameFinished = false;
+    state.combo.count = 0;
+    state.combo.timer = 0;
+    state.score = 0;
     grid.init(newRadius);
     spawnShapes();
 }
@@ -183,36 +186,36 @@ const handleEnd = (e) => {
     if (!state.isDragging || !state.dragTarget) return;
 
     const hex = pixelToHex(state.dragTarget.x, state.dragTarget.y, state.zones.main.width / 2, state.zones.main.height / 2 + CONFIG.DELTA_Y);
-    
+    const pos = getPointerPos(e);
+
     if (grid.canPlace(hex, state.dragTarget.shape)) {
         const placementScore = state.dragTarget.shape.coords.length * CONFIG.SCORE.PER_TILE;
         state.score += placementScore;
 
         grid.place(hex, state.dragTarget.shape, state.dragTarget.color);
         audio.play('place');
+        fxManager.createDust(pos.x, pos.y);
+        fxManager.createPulse(pos.x, pos.y);
 
         const clearInfo = grid.checkAndClearLines();
         const uniqueCoords = clearInfo.grid;
         const linesCleared = clearInfo.linesCleared;
-        uniqueCoords.forEach(key => {
+
+        // 被消除的格子
+        uniqueCoords.forEach(cell => {
 
             const pixelPos = hexToPixel(
-                parseInt(key.q),
-                parseInt(key.r),
+                parseInt(cell.q),
+                parseInt(cell.r),
                 state.zones.main.width / 2,
                 state.zones.main.height / 2
             );
 
-            fxManager.createExplosion(
-                pixelPos.x,
-                pixelPos.y,
-                key.color,
-                0.5,
-                0
-            );
+            fxManager.createExplosion(pixelPos.x, pixelPos.y, cell.color, 0.6, 0, 12);
 
         });
-
+        
+        // 被消除線數量
         if (linesCleared > 0) {
             const clearScore = Math.floor(linesCleared * CONFIG.SCORE.LINE_BASE * (1 + (linesCleared - 1) * CONFIG.SCORE.COMBO_BONUS));
             state.score += clearScore;
@@ -230,6 +233,7 @@ const handleEnd = (e) => {
             state.highScore = state.score;
             localStorage.setItem('hex-high-score', state.highScore);
         }
+
         state.dragTarget.shape = null;
         spawnShapes();
     } 
@@ -271,7 +275,6 @@ function gameLogic() {
     if(checkGameOver() && !gameFinished){
         gameFinished = true;
         state.endScore = state.score;
-        state.score = 0;
         
         const tasks = grid.startDissolve();
 
@@ -311,7 +314,7 @@ function gameRender() {
     renderer.clear();
 
     renderer.drawZonesBackground(state.zones);
-    renderer.drawGrid(grid, state.zones.main);
+    renderer.drawGrid(grid, state.zones.main, fxManager.pulses);
 
     if (state.previewHex && state.dragTarget) {
         renderer.drawPlacementPreview(state.previewHex, state.dragTarget.shape, state.zones.main);

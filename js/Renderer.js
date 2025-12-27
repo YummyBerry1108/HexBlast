@@ -159,17 +159,32 @@ export class Renderer {
      * @param {GridManager} gridManager 
      * @param {Object} mainZone - 主區域坐標資訊
      */
-    drawGrid(gridManager, mainZone) {
+    drawGrid(gridManager, mainZone, pulses) {
         const centerX = mainZone.width / 2;
         const centerY = mainZone.height / 2 + CONFIG.DELTA_Y;
 
-        gridManager.gridState.forEach((value, key) => {
+        gridManager.gridState.forEach((cell, key) => {
             const [q, r] = key.split(',').map(Number);
             const screenX = CONFIG.DEFAULT_HEX_SIZE * Math.sqrt(3) * (q + r / 2) + centerX;
             const screenY = CONFIG.DEFAULT_HEX_SIZE * 3 / 2 * r + centerY;
+            
+            let scale = 1.0;
+            pulses.forEach(p => {
+                const dist = Math.hypot(screenX - p.x, screenY - p.y);
+                if (dist < p.maxRadius) {
+                    // 距離波前的距離決定強度
+                    const waveFront = (1 - p.currLife / p.life) * p.maxRadius;
+                    const distToWave = Math.abs(dist - waveFront);
+                    
+                    if (distToWave < 50) { // 波紋寬度 50
+                        const strength = (1 - distToWave / 50) * p.currLife / p.life;
+                        scale += strength * 0.1; // 震動幅度
+                    }
+                }
+            });
 
-            const color = value.occupied ? value.color : "#E0E0E0";
-            this.drawHexagon(screenX, screenY, CONFIG.DEFAULT_HEX_SIZE - 2, color);
+            const color = cell.occupied ? cell.color : "#b4b4b4ff";
+            this.drawHexagon(screenX, screenY, (CONFIG.DEFAULT_HEX_SIZE - 2) * scale, color);
         });
     }
 

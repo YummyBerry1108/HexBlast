@@ -5,6 +5,7 @@ export class FXManager {
         this.particles = [];
         this.shakeTime = 0;
         this.shakeIntensity = 0;
+        this.pulses = [];
     }
 
     /**
@@ -21,6 +22,24 @@ export class FXManager {
                 prelife: prelife,
                 color: color,
                 size: Math.random() * 5 + 5
+            });
+        }
+    }
+
+    /**
+     * 小煙塵粒子
+     */
+    createDust(x, y, color = '#777777', life = 0.5, prelife = 0, particleCount = 10) {
+        for (let i = 0; i < particleCount; i++) {
+            this.particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                life: life,
+                prelife: prelife,
+                color: color,
+                size: Math.random() * 3 + 10
             });
         }
     }
@@ -48,6 +67,18 @@ export class FXManager {
         });
     }
 
+
+    createPulse(x, y) {
+        this.pulses.push({
+            x: x,
+            y: y,
+            life: 1.0,      // 1.0 倒數到 0
+            currLife: 1.0,
+            speed: 1.5,     // 擴散速度
+            maxRadius: 300  // 衝擊範圍
+        });
+    }
+
     update() {
         // 更新粒子
         for (let i = this.particles.length - 1; i >= 0; i--) {
@@ -61,6 +92,12 @@ export class FXManager {
             p.life -= 1/CONFIG.FPS;
             if (p.life <= 0) this.particles.splice(i, 1);
         }
+
+        // 更新格子脈衝
+        this.pulses.forEach((p, i) => {
+            p.currLife -= 1 / CONFIG.FPS * p.speed; // 約 0.5 秒消失
+            if (p.currLife <= 0) this.pulses.splice(i, 1);
+        });
 
         // 更新震動時間
         if (this.shakeTime > 0) this.shakeTime--;
