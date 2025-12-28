@@ -7,6 +7,7 @@ import { AudioManager } from './AudioManager.js';
 import { FXManager } from './FXManager.js';
 import { Theme } from './Theme.js';
 import { BlockGenerator } from './BlockGenerator.js';
+import { UIManager } from './UIManager.js';
 // Init
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -15,6 +16,7 @@ const grid = new GridManager(CONFIG.DEFAULT_RADIUS);
 const audioManager = new AudioManager();
 const fxManager = new FXManager();
 const blockGenerator = new BlockGenerator();
+const ui = new UIManager();
 
 audioManager.loadSounds({
     pick: 'assets/pick.wav',
@@ -32,6 +34,8 @@ const state = {
         { shape: null, x: 0, y: 0, scale: 0.8, isDragging: false, color: null, originalPos: { x: 0, y: 0 } },
         { shape: null, x: 0, y: 0, scale: 0.8, isDragging: false, color: null, originalPos: { x: 0, y: 0 } }
     ],
+
+    isGameOver: true,
 
     // Score State
     score: 0,
@@ -51,12 +55,12 @@ const state = {
     previewHex: null 
 };
 
-// Main Functions
+// Support Functions
 function newGame(newRadius) {
     if (gameState === CONFIG.GAME_STATE.GAME) return;
     audioManager.playBGM('bgm');
     gameState = CONFIG.GAME_STATE.GAME;
-    gameFinished = false;
+    state.isGameOver = false;
     state.combo.count = 0;
     state.combo.timer = 0;
     state.score = 0;
@@ -121,7 +125,7 @@ function updateZones() {
     const minDimension = Math.min(state.zones.main.width, state.zones.main.height) - padding;
     // 六邊形網格總寬度約為 (radius * 2 + 1) * hex_width
     // hex_width = hex_size * sqrt(3)
-    CONFIG.DEFAULT_HEX_SIZE = Math.min(minDimension / ((grid.radius * 2 + 1) * 1.732), 50);
+    CONFIG.DEFAULT_HEX_SIZE = Math.min(minDimension / ((grid.radius * 2 + 1) * 1.732), 45);
     console.log('DEFAULT_HEX_SIZE:', CONFIG.DEFAULT_HEX_SIZE);
 }
 
@@ -132,6 +136,16 @@ function checkGameOver() {
         }
     }
     return true;
+}
+
+function triggerGameOver() {
+    if (state.score > state.highScore) {
+        state.highScore = state.score;
+        localStorage.setItem('hex-high-score', state.highScore);
+    }
+
+    ui.changeScreen('gameover')
+    ui.animateScore(state.score);
 }
 
 function getPointerPos(e) {
@@ -157,15 +171,11 @@ function getPointerPos(e) {
     };
 }
 
-// Event Listeners
+// Event Listeners (basically handle mouse or finger move)
 const handleStart = (e) => {
     if (e.type === 'touchstart') e.preventDefault(); // 防止手機預設行為
     audioManager.play('pick');
-    if (gameState === CONFIG.GAME_STATE.OVER){
-        gameState = CONFIG.GAME_STATE.MENU;
-        return;
-    }
-    newGame(CONFIG.DEFAULT_RADIUS);
+    
     const pos = getPointerPos(e);
 
     state.selectionSlots.forEach(slot => {
@@ -268,21 +278,7 @@ const handleEnd = (e) => {
     state.previewHex = null;
 }
 
-window.addEventListener('keydown', (e) => {
-    if (gameState === CONFIG.GAME_STATE.OVER){
-        gameState = CONFIG.GAME_STATE.MENU;
-        return;
-    }
-    let newRadius = CONFIG.DEFAULT_RADIUS;
-    if ('1' < e.key && e.key <= '5' && gameState !== CONFIG.GAME_STATE.GAME){
-        newRadius = parseInt(e.key);
-        console.log('Set grid radius to', newRadius);
-    } 
-    newGame(newRadius);
-});
-
 window.addEventListener('resize', updateZones);
-
 
 canvas.addEventListener('mousedown', handleStart);
 canvas.addEventListener('mousemove', handleMove);
@@ -292,77 +288,42 @@ canvas.addEventListener('touchstart', handleStart, { passive: false });
 canvas.addEventListener('touchmove', handleMove, { passive: false });
 canvas.addEventListener('touchend', handleEnd);
 
-// Menu
+// Menu (On HTML)
 
-const menuOverlay = document.getElementById('menu-overlay');
+const startMenu = document.getElementById('start-menu');
+const gameoverMenu = document.getElementById('gameover-menu');
 const startBtn = document.getElementById('start-btn');
+const settingBtn = document.getElementById('setting-btn');
+const backBtns = document.querySelectorAll('.back-menu');
+
+const clickMenuBtn = () => {
+    audioManager.play('pick')
+}
 
 startBtn.addEventListener('click', () => {
-    if (gameState === CONFIG.GAME_STATE.OVER) {
-        gameState = CONFIG.GAME_STATE.MENU;
-        document.getElementById('menu-title').innerText = "HEX BLAST";
-        document.getElementById('start-btn').innerText = "START GAME";
-        document.getElementById('game-over-stats').style.display = "none";
-        return;
-    }
-    menuOverlay.style.opacity = '0';
-    setTimeout(() => {
-        menuOverlay.style.display = 'none';
-        state.isGameOver = false;
-    }, 500);
+    audioManager.play('pick')
+    ui.changeScreen('game');
+    newGame(parseInt(document.getElementById('game-radius').value))
 });
 
-function triggerGameOver() {
-    state.isGameOver = true;
-    
-    // 1. 更新 UI 文字
-    document.getElementById('menu-title').innerText = "GAME OVER";
-    document.getElementById('start-btn').innerText = "RETRY";
-    document.getElementById('game-over-stats').style.display = "contents";
-    document.getElementById('high-score').innerText = state.highScore;
-    
-    // 2. 顯示 Overlay
-    const overlay = document.getElementById('menu-overlay');
-    overlay.style.display = "flex";
-    setTimeout(() => overlay.style.opacity = "1", 10);
+settingBtn.addEventListener('click', () => {
+    audioManager.play('pick')
+    ui.changeScreen('settings');
+});
 
-    // 3. 分數跑值動畫
-    animateScore(state.score);
+backBtns.forEach(backBtn => {
+    backBtn.addEventListener('click', () => {
+        if (gameState === CONFIG.GAME_STATE.OVER) gameState = CONFIG.GAME_STATE.MENU
+        audioManager.play('pick')
+        ui.changeScreen('menu');
+    })
+});
 
-    // 4. 更新最高紀錄
-    if (state.score > state.highScore) {
-        state.highScore = state.score;
-        localStorage.setItem('hexblast_highscore', state.highScore);
-    }
-}
-
-function animateScore(targetScore) {
-    const scoreElement = document.getElementById('final-score');
-    let currentDisplay = 0;
-    const duration = 1500; // 跑 1.5 秒
-    const startTime = performance.now();
-
-    function update(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        
-        // 使用 Ease Out 效果讓結尾慢下來
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        currentDisplay = Math.floor(easeOut * targetScore);
-        
-        scoreElement.innerText = currentDisplay.toLocaleString();
-
-        if (progress < 1) {
-            requestAnimationFrame(update);
-        }
-    }
-    requestAnimationFrame(update);
-}
 // Main Game Loop
 
 function gameLogic() {
-    if(checkGameOver() && !gameFinished){
-        gameFinished = true;
+    if(checkGameOver() && !state.isGameOver){
+        state.isGameOver = true
         state.endScore = state.score;
         
         const tasks = grid.startDissolve();
@@ -378,7 +339,7 @@ function gameLogic() {
         state.selectionSlots.forEach(slot => slot.shape = null);
     } 
 
-    if (gameFinished && fxManager.particles.length === 0) {
+    if (state.isGameOver && fxManager.particles.length === 0) {
         gameState = CONFIG.GAME_STATE.OVER;
         triggerGameOver();
         return;
@@ -416,23 +377,17 @@ function gameRender() {
     renderer.applyShake(fxManager);
 }
 
-function gameScene() {
-    gameLogic();
-    gameRender();
-}
-
 function menuScene() {
-    renderer.clear();
-    renderer.drawMenu();
+    // render by html
 }
 
 function endScene() {
-    // renderer.clear();
-    // renderer.drawEndScreen(state.endScore, state.highScore);
+    // render by html
 }
 
+// Before Game Loop
+
 let gameState = CONFIG.GAME_STATE.MENU;
-let gameFinished = false;
 
 let lastTimestamp = 0;
 let deltaTime = 0;
@@ -441,15 +396,22 @@ function gameLoop(timestamp) {
     deltaTime = timestamp - lastTimestamp;
     lastTimestamp = timestamp;
     CONFIG.FPS = 1 / deltaTime * 1000;
-    if (gameState === CONFIG.GAME_STATE.GAME) {
-        gameScene();
-    } 
-    else if (gameState === CONFIG.GAME_STATE.MENU) {
-        menuScene();
+
+    switch (gameState) {
+        case CONFIG.GAME_STATE.GAME:
+            gameLogic();   // 處理方塊邏輯、消除判斷、粒子特效生成
+            gameRender();  // 繪製網格、方塊
+            break;
+            
+        case CONFIG.GAME_STATE.MENU:
+            menuScene(); 
+            break;
+            
+        case CONFIG.GAME_STATE.OVER:
+            endScene();
+            break;
     }
-    else if (gameState === CONFIG.GAME_STATE.OVER) {
-        endScene();
-    }
+
     requestAnimationFrame(gameLoop);
 }
 

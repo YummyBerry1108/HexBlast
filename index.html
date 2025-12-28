@@ -13,18 +13,36 @@
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
         
-        <div id="menu-overlay" class="overlay">
-            <h1 id="menu-title" class="neon-text">HEX BLAST</h1>
-            
-            <div id="game-over-stats" style="display: none;">
-                <p class="stat-label">FINAL SCORE</p>
-                <p id="final-score" class="stat-value">0</p>
-                <p class="stat-value">BEST: <span id="high-score", class="stat-value">0</span></p>
+        <section class="menu-screen" id="start-menu">
+            <h1 class="neon-text" id="ui-title">HEX BLAST</h1>
+            <button class="neon-button" id="start-btn">START GAME</button>
+            <button class="neon-button" id="setting-btn">SETTINGS</button>
+        </section>
+
+        <section class="menu-screen" id="settings-menu" style="display: none;">
+            <h1 class="neon-text">SETTINGS</h1>
+            <div class="setting-item">
+                <span class="stat-value">MUSIC</span>
+                <input type="range" id="bgm-volume" min="0" max="1" step="0.1">
             </div>
-            
-            <button id="start-btn" class="neon-button">START GAME</button>
-        </div>
+            <div class="setting-item">
+                <span class="stat-value">SFX</span>
+                <input type="range" id="sfx-volume" min="0" max="1" step="0.1">
+            </div>
+            <div class="setting-item">
+                <span class="stat-value">RADIUS</span>
+                <input type="range" id="game-radius" min="2" max="5" step="1" value="5">
+            </div>
+            <button class="neon-button back-menu">BACK</button>
+        </section>
+
+        <section class="menu-screen" id="gameover-menu" style="display: none;">
+            <h1 class="stat-label">FINAL SCORE</h1>
+            <p id="final-score" class="stat-value">0</p>
+            <p class="stat-value">BEST: <span id="high-score" class="stat-value">0</span></p>
+            <button class="neon-button back-menu">BACK</button>
+        </section>
     </div>
-    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/main.js" defer></script>
 </body>
 </html>

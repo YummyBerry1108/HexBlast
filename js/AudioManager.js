@@ -1,3 +1,5 @@
+import { CONFIG } from "./constants.js";
+
 export class AudioManager {
     constructor() {
         this.sounds = {};
@@ -24,7 +26,7 @@ export class AudioManager {
         if (!this.enabled || !this.sounds[name]) return;
 
         const sound = this.sounds[name].cloneNode();
-        sound.volume = 0.5;
+        sound.volume = CONFIG.SFX_VOLUME;
         sound.play().catch(e => console.warn("Audio play blocked by browser."));
     }
 
@@ -39,7 +41,7 @@ export class AudioManager {
         }
         this.bgm = this.sounds[name];
         this.bgm.loop = true;
-        this.bgm.volume = 0.3;
+        this.bgm.volume = CONFIG.MUSIC_VOLUME;
         this.bgm.play().catch(e => console.warn("BGM play blocked by browser."));
     }
 }

@@ -16,6 +16,10 @@ export const CONFIG = {
     // Score Display Settings
     SCORE_SPACE: 1.8,
     MAX_DIGITS: 8,
+
+    // Audio Settings
+    MUSIC_VOLUME: 0.5,
+    SFX_VOLUME: 0.5,
 };
 
 export const SHAPES = [
