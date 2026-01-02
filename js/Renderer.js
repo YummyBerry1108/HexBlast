@@ -19,24 +19,6 @@ export class Renderer {
     }
 
     /**
-     * 繪製選單
-     */
-    drawMenu() {
-        const { width, height } = this.ctx.canvas;
-        this.ctx.fillStyle = "#000000cc";
-        this.ctx.fillRect(0, 0, width, height);
-
-        this.ctx.save();
-        this.ctx.fillStyle = "#d6d6d6ff";
-        this.ctx.font = "bold 24px Arial";
-        this.ctx.textAlign = "center";
-        
-        this.ctx.fillText(`START GAME`, width / 2, height / 2);
-        this.ctx.fillText(`PRESS ANY KEY`, width / 2, height / 2 + 40);
-        this.ctx.restore();
-    }
-
-    /**
      * 繪製目前遊戲分數
      * @param {number} score - 當前分數
      * @param {number} highScore - 最高分
@@ -80,27 +62,6 @@ export class Renderer {
     }
 
     /**
-     * 繪製遊戲結束畫面
-     * @param {number} score - 當前分數
-     * @param {number} highScore - 最高分
-     */
-    drawEndScreen(score, highScore) {
-        const { width, height } = this.ctx.canvas;
-        this.ctx.fillStyle = "#000000cc";
-        this.ctx.fillRect(0, 0, width, height);
-
-        this.ctx.save();
-        this.ctx.fillStyle = "#d6d6d6ff";
-        this.ctx.font = "bold 24px Arial";
-        this.ctx.textAlign = "center";
-
-        // 繪製目前分數
-        this.ctx.fillText(`GAME OVER`, width / 2, height / 2);
-        this.ctx.fillText(`SCORE: ${score}`, width / 2, height / 2 + 40);
-        this.ctx.fillText(`HIGH SCORE: ${highScore}`, width / 2, height / 2 + 80);
-    }
-
-    /**
      * 繪製分區背景與邊界
      * @param {Object} zones - 包含 main 與 sidebar 的座標資訊
      */
@@ -135,23 +96,57 @@ export class Renderer {
      * @param {number} alpha - 透明度 (0.0 ~ 1.0)
      */
     drawHexagon(x, y, size, color, alpha = 1.0) {
-        this.ctx.save();
-        this.ctx.globalAlpha = alpha;
-        this.ctx.beginPath();
+        const ctx = this.ctx;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = color;
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
         for (let i = 0; i < 6; i++) {
-            const angle_rad = (Math.PI / 180) * (60 * i - 30);
-            const vx = x + size * Math.cos(angle_rad);
-            const vy = y + size * Math.sin(angle_rad);
-            if (i === 0) this.ctx.moveTo(vx, vy);
-            else this.ctx.lineTo(vx, vy);
+            const angle = 2 * Math.PI / 6 * i - Math.PI / 6;
+            const px = x + size * Math.cos(angle);
+            const py = y + size * Math.sin(angle);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
         }
-        this.ctx.closePath();
-        this.ctx.fillStyle = color;
-        this.ctx.fill();
-        this.ctx.strokeStyle = "rgba(0,0,0,0.2)";
-        this.ctx.lineWidth = 2;
-        this.ctx.stroke();
-        this.ctx.restore();
+        ctx.closePath();
+
+        if (color != '#b4b4b4ff') {
+            const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+            gradient.addColorStop(0, color);
+            gradient.addColorStop(1, this.adjustColorOpacity(color, 0.5));
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.stroke();
+
+        } else {
+            ctx.fillStyle = 'rgba(16, 16, 26, 0.8)'; 
+            ctx.fill();
+        
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.15)'; 
+            ctx.shadowBlur = 5;
+            ctx.stroke();
+
+            ctx.beginPath();
+            const s = size * 0.2;
+            ctx.moveTo(x - s, y); ctx.lineTo(x + s, y);
+            ctx.moveTo(x, y - s); ctx.lineTo(x, y + s);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = 'rgba(0, 242, 255, 0.3)';
+            ctx.stroke();
+            ctx.closePath();
+        }
+
+        ctx.shadowBlur = 0;
+    }
+    
+    adjustColorOpacity(color, alpha) {
+        const r = parseInt(color.slice(1, 3), 16);
+        const g = parseInt(color.slice(3, 5), 16);
+        const b = parseInt(color.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
     /**
@@ -226,7 +221,7 @@ export class Renderer {
             const screenX = CONFIG.DEFAULT_HEX_SIZE * Math.sqrt(3) * (q + r / 2) + centerX;
             const screenY = CONFIG.DEFAULT_HEX_SIZE * 3 / 2 * r + centerY;
 
-            this.drawHexagon(screenX, screenY, CONFIG.DEFAULT_HEX_SIZE - 2, "#000", 0.1);
+            this.drawHexagon(screenX, screenY, CONFIG.DEFAULT_HEX_SIZE - 2, "#b5b5b5ff", 0.1);
         });
     }
     

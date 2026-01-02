@@ -237,7 +237,7 @@ const handleEnd = (e) => {
                 parseInt(cell.q),
                 parseInt(cell.r),
                 state.zones.main.width / 2,
-                state.zones.main.height / 2
+                state.zones.main.height / 2 + CONFIG.DELTA_Y
             );
 
             fxManager.createExplosion(pixelPos.x, pixelPos.y, cell.color, 0.6, 0, 12);
@@ -330,7 +330,7 @@ function gameLogic() {
 
         tasks.forEach(task => {
             const centerX = state.zones.main.width / 2;
-            const centerY = state.zones.main.height / 2;
+            const centerY = state.zones.main.height / 2 + CONFIG.DELTA_Y;
             const pixelPos = hexToPixel(task.q, task.r, centerX, centerY);
 
             fxManager.createExplosion(pixelPos.x, pixelPos.y, task.color, 1.0, task.delay);
