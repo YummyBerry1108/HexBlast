@@ -9,6 +9,8 @@ export class Renderer {
     constructor(ctx) {
         this.ctx = ctx;
         this.numberDisplay = new NumberDisplay(ctx);
+        this.cache = {}
+        this.initHexCache(CONFIG.DEFAULT_HEX_SIZE);
     }
 
     /**
@@ -96,50 +98,71 @@ export class Renderer {
      * @param {number} alpha - 透明度 (0.0 ~ 1.0)
      */
     drawHexagon(x, y, size, color, alpha = 1.0) {
-        const ctx = this.ctx;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = color;
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 2;
-
+        const img = this.cache[color] || this.cache['empty'];
+        const offset = img.width / 2;
+        this.ctx.drawImage(img, x - offset, y - offset, size * Math.PI, size * Math.PI);
+    }
+    
+    
+    initHexCache(size) {
+        const types = ['#b4b4b4ff', '#FF5733', '#33FF57', '#3357FF', '#F1C40F', '#9B59B6', '#b5b5b5ff']; // 根據你的顏色需求
+        
+        types.forEach(type => {
+            const canvas = document.createElement('canvas');
+            const padding = 20; 
+            canvas.width = (size + padding) * 2;
+            canvas.height = (size + padding) * 2;
+            
+            const tempCtx = canvas.getContext('2d');
+            tempCtx.translate(canvas.width / 2, canvas.height / 2);
+            tempCtx.shadowBlur = 10;
+            tempCtx.lineWidth = 2;
+            tempCtx.shadowColor = type;
+            tempCtx.strokeStyle = type;
+            
+            const x = 0
+            const y = 0
+            this.drawHexPath(tempCtx, size)
+            
+            if (type === '#b4b4b4ff') {
+                tempCtx.fillStyle = 'rgba(16, 16, 26, 0.8)'; 
+                tempCtx.fill();
+                
+                tempCtx.strokeStyle = 'rgba(0, 242, 255, 0.15)'; 
+                tempCtx.shadowBlur = 5;
+                tempCtx.stroke();
+                
+                tempCtx.beginPath();
+                const s = size * 0.2;
+                tempCtx.moveTo(x - s, y); tempCtx.lineTo(x + s, y);
+                tempCtx.moveTo(x, y - s); tempCtx.lineTo(x, y + s);
+                tempCtx.lineWidth = 1;
+                tempCtx.strokeStyle = 'rgba(0, 242, 255, 0.3)';
+                tempCtx.stroke();
+                tempCtx.closePath();
+            } else {
+                const gradient = tempCtx.createRadialGradient(0, 0, 0, 0, 0, size);
+                gradient.addColorStop(0, type);
+                gradient.addColorStop(1, this.adjustColorOpacity(type, 0.5));
+                
+                tempCtx.fillStyle = gradient;
+                tempCtx.fill();
+                tempCtx.stroke();
+            }
+            
+            tempCtx.shadowBlur = 0;
+            this.cache[type] = canvas;
+        });
+    }
+    
+    drawHexPath(ctx, size) {
         ctx.beginPath();
         for (let i = 0; i < 6; i++) {
             const angle = 2 * Math.PI / 6 * i - Math.PI / 6;
-            const px = x + size * Math.cos(angle);
-            const py = y + size * Math.sin(angle);
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
+            if (i === 0) ctx.moveTo(size * Math.cos(angle), size * Math.sin(angle));
+            else ctx.lineTo(size * Math.cos(angle), size * Math.sin(angle));
         }
         ctx.closePath();
-
-        if (color != '#b4b4b4ff') {
-            const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
-            gradient.addColorStop(0, color);
-            gradient.addColorStop(1, this.adjustColorOpacity(color, 0.5));
-            
-            ctx.fillStyle = gradient;
-            ctx.fill();
-            ctx.stroke();
-
-        } else {
-            ctx.fillStyle = 'rgba(16, 16, 26, 0.8)'; 
-            ctx.fill();
-        
-            ctx.strokeStyle = 'rgba(0, 242, 255, 0.15)'; 
-            ctx.shadowBlur = 5;
-            ctx.stroke();
-
-            ctx.beginPath();
-            const s = size * 0.2;
-            ctx.moveTo(x - s, y); ctx.lineTo(x + s, y);
-            ctx.moveTo(x, y - s); ctx.lineTo(x, y + s);
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = 'rgba(0, 242, 255, 0.3)';
-            ctx.stroke();
-            ctx.closePath();
-        }
-
-        ctx.shadowBlur = 0;
     }
     
     adjustColorOpacity(color, alpha) {
@@ -148,6 +171,7 @@ export class Renderer {
         const b = parseInt(color.slice(5, 7), 16);
         return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
+    
 
     /**
      * 繪製主網格
